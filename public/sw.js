@@ -5,16 +5,19 @@
    - fetch: navigations = network-first (fall back to cached '/');
      other same-origin GETs = cache-first, then network + store
    ============================================================ */
-const VERSION = 'cc-v1';
+const VERSION = 'cc-v2';
 const SHELL = ['/', '/index.html', '/styles/main.css', '/manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches
-      .open(VERSION)
-      .then((cache) => cache.addAll(SHELL))
-      .then(() => self.skipWaiting()),
-  );
+  // Deliberately no skipWaiting() here — an updated worker waits until
+  // the page confirms the update and posts SKIP_WAITING.
+  event.waitUntil(caches.open(VERSION).then((cache) => cache.addAll(SHELL)));
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('activate', (event) => {

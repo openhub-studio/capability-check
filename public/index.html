@@ -15,6 +15,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Capabilities" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <noscript><style>.gate { display: none }</style></noscript>
 </head>
 <body>
   <!-- ======================= Nav ======================= -->
@@ -56,7 +57,7 @@
           <span class="legend-chip"><i class="dot dot-warn"></i><b id="legend-partial">0</b> partial</span>
           <span class="legend-chip"><i class="dot dot-bad"></i><b id="legend-bad">0</b> unavailable</span>
         </div>
-        <p id="summary-note" class="summary-note">Checking…</p>
+        <p id="summary-note" class="summary-note">Waiting to begin…</p>
       </div>
     </section>
 
@@ -80,6 +81,25 @@
   </main>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- ============ Start gate (checks only run after confirmation) ============ -->
+  <div id="start-gate" class="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title">
+    <div class="gate-card">
+      <h2 id="gate-title" class="gate-title">Ready when you are</h2>
+      <p class="gate-sub">
+        <b id="gate-count">12</b> checks run entirely on your device —
+        storage probes, worker registration, GPU queries. Nothing is uploaded.
+      </p>
+      <button id="start-btn" class="btn btn-primary gate-btn" type="button">Run the checks</button>
+    </div>
+  </div>
+
+  <!-- ============ PWA update prompt ============ -->
+  <div id="update-banner" class="update-banner" role="alert" hidden>
+    <span class="update-text">A new version of this app is ready.</span>
+    <button id="update-reload" class="btn btn-primary" type="button">Reload</button>
+    <button id="update-later" class="btn btn-quiet" type="button">Later</button>
+  </div>
 
   <script type="module" src="scripts/app.js"></script>
 </body>
