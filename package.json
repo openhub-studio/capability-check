@@ -1,0 +1,25 @@
+{
+  "name": "capability-check",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Live report of web platform features (WASM, SIMD, WebGPU) available in your browser",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsc --watch",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/openhub-studio/capability-check.git"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/openhub-studio/capability-check/issues"
+  },
+  "homepage": "https://hello.openhub.today",
+  "devDependencies": {
+    "@webgpu/types": "0.1.72",
+    "typescript": "5.9.3"
+  }
+}
