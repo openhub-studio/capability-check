@@ -4,7 +4,7 @@
 
 import { FEATURES } from '../checks/index.js';
 import { GROUPS } from '../groups.js';
-import { results } from '../state.js';
+import { results, run } from '../state.js';
 import { groupEls } from './cards.js';
 import { el } from './dom.js';
 import { applyFilter, refreshFilterCounts } from './filters.js';
@@ -45,6 +45,9 @@ export function updateSummary(): void {
   const fillPartial = el('fill-partial');
   const fillBad = el('fill-bad');
   const note = el('summary-note');
+  const cta = el('start-cta');
+  const startBtn = el<HTMLButtonElement>('start-btn');
+  note.hidden = !run.started;
 
   setText('score-total', String(total));
   numEl.textContent = String(okCount);
@@ -65,9 +68,17 @@ export function updateSummary(): void {
   numEl.classList.remove('is-good', 'is-warn', 'is-bad');
 
   if (done !== total) {
+    startBtn.disabled = true;
+    startBtn.textContent = 'Checking… ' + done + '/' + total;
     note.textContent = 'Checking…';
     return;
   }
+
+  // Run complete — the CTA dissolves into the verdict.
+  cta.classList.add('done');
+  setTimeout(() => {
+    cta.hidden = true;
+  }, 260);
 
   if (okCount === total && partial === 0) {
     numEl.classList.add('is-good');

@@ -7,9 +7,10 @@ import { GROUPS } from '../groups.js';
 import type { CheckStatus, Feature } from '../types.js';
 import { el, mustQuery } from './dom.js';
 
-export type UiStatus = CheckStatus | 'checking';
+export type UiStatus = CheckStatus | 'checking' | 'pending';
 
 export const STATUS_LABEL: Record<UiStatus, string> = {
+  pending: 'Pending',
   checking: 'Checking',
   supported: 'Supported',
   partial: 'Partial',
@@ -17,6 +18,7 @@ export const STATUS_LABEL: Record<UiStatus, string> = {
 };
 
 export interface CardEls {
+  card: HTMLElement;
   badge: HTMLElement;
   detail: HTMLElement;
   body: HTMLElement;
@@ -74,7 +76,7 @@ function reveal(card: HTMLElement, index: number): void {
 
 function featureCard(f: Feature, index: number): HTMLElement {
   const card = document.createElement('article');
-  card.className = 'card';
+  card.className = 'card is-pending';
   card.id = 'card-' + f.id;
 
   const head = document.createElement('div');
@@ -94,10 +96,10 @@ function featureCard(f: Feature, index: number): HTMLElement {
   else tag.remove();
 
   const badge = document.createElement('span');
-  badge.className = 'badge checking';
+  badge.className = 'badge pending';
   badge.innerHTML =
     '<span class="badge-dot"></span><span class="badge-text"></span>';
-  mustQuery(badge, '.badge-text').textContent = STATUS_LABEL.checking;
+  mustQuery(badge, '.badge-text').textContent = STATUS_LABEL.pending;
 
   head.append(titleWrap, badge);
 
@@ -109,9 +111,7 @@ function featureCard(f: Feature, index: number): HTMLElement {
   body.className = 'card-body';
   const detail = document.createElement('p');
   detail.className = 'card-detail';
-  detail.textContent = 'Checking…';
   body.append(detail);
-  skeletonBody(body);
 
   const foot = document.createElement('div');
   foot.className = 'card-foot';
@@ -126,7 +126,7 @@ function featureCard(f: Feature, index: number): HTMLElement {
   }
 
   card.append(head, desc, body, foot);
-  cardEls[f.id] = { badge, detail, body };
+  cardEls[f.id] = { card, badge, detail, body };
   reveal(card, index);
   return card;
 }

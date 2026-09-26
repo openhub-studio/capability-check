@@ -8,3 +8,8 @@ export interface RunResult extends CheckResult {
 }
 
 export const results: Record<string, RunResult> = {};
+
+/* Becomes true once the user confirms the run — checks never execute
+   before that. Read by summary.ts (CTA state) and filters.ts (pending
+   cards match every filter). */
+export const run = { started: false };

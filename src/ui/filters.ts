@@ -4,7 +4,7 @@
    so counts and visibility track live results. */
 
 import { FEATURES } from '../checks/index.js';
-import { results } from '../state.js';
+import { results, run } from '../state.js';
 import type { CheckStatus } from '../types.js';
 
 export type FilterKey = 'all' | 'supported' | 'missing';
@@ -13,11 +13,23 @@ const VALID: ReadonlySet<string> = new Set(['all', 'supported', 'missing']);
 
 let current: FilterKey = 'all';
 
+/** Enable/disable the segmented control (disabled until the run starts). */
+export function setFiltersEnabled(enabled: boolean): void {
+  document
+    .querySelectorAll<HTMLButtonElement>('.seg-btn')
+    .forEach((btn) => {
+      btn.disabled = !enabled;
+    });
+}
+
 function statusOf(id: string): CheckStatus | 'checking' {
   return results[id]?.status ?? 'checking';
 }
 
 function matches(id: string): boolean {
+  // Before the run starts every card is pending — filtering by outcome
+  // would wrongly hide the whole page.
+  if (!run.started) return true;
   const s = statusOf(id);
   if (current === 'supported') return s === 'supported';
   if (current === 'missing') return s === 'partial' || s === 'unsupported';
@@ -89,6 +101,7 @@ function setFilter(key: FilterKey, push = true): void {
 
 /** Reads the initial hash and wires button clicks. Call once at boot. */
 export function initFilters(): void {
+  setFiltersEnabled(false);
   const fromHash = window.location.hash.replace('#', '');
   if (VALID.has(fromHash)) current = fromHash as FilterKey;
   document

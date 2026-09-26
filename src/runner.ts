@@ -2,7 +2,7 @@
    store and the DOM, keeps the summary in sync. */
 
 import { FEATURES } from './checks/index.js';
-import { results } from './state.js';
+import { results, run } from './state.js';
 import type { CheckResult } from './types.js';
 import { cardEls, skeletonBody, STATUS_LABEL } from './ui/cards.js';
 import { mustQuery } from './ui/dom.js';
@@ -40,6 +40,7 @@ function resetCards(): void {
   for (const f of FEATURES) {
     const els = cardEls[f.id];
     if (!els) continue;
+    els.card.classList.remove('is-pending');
     els.badge.className = 'badge checking';
     mustQuery(els.badge, '.badge-text').textContent = STATUS_LABEL.checking;
     els.detail.textContent = 'Checking…';
@@ -71,6 +72,7 @@ async function runFeature(f: (typeof FEATURES)[number]): Promise<void> {
 
 /** Runs every registered check, visually staggered. */
 export function runAll(): void {
+  run.started = true;
   resetCards();
   FEATURES.forEach((f, i) => {
     // small stagger so the cascade reads as live checks, not noise

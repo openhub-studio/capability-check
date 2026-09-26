@@ -5,15 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Capabilities — What can your browser do?</title>
   <meta name="description" content="A live report of the web platform features available in your browser. Checked locally — nothing leaves this device." />
-  <!-- Critical gate/banner geometry inlined BEFORE the stylesheet: fresh
-       CSS overrides these basics; a stale cached stylesheet can't break
-       the start gate. -->
+  <!-- Critical update-banner geometry inlined BEFORE the stylesheet: fresh
+       CSS overrides these basics; a stale cached stylesheet can't strand
+       the banner on screen. -->
   <style>
-    .gate { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 24px; }
-    .gate-card { width: min(400px, 100%); background: var(--surface, #f5f5f7); border-radius: 28px; padding: 44px 36px 36px; text-align: center; }
     .update-banner { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 70; display: flex; align-items: center; gap: 14px; padding: 10px 10px 10px 20px; border-radius: 980px; }
     .update-banner[hidden] { display: none; }
-    html.gate-open { overflow: hidden; }
   </style>
   <link rel="stylesheet" href="styles/main.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231d1d1f'/%3E%3Cpath d='M9 17.5l4.5 4.5L23 12' stroke='white' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
@@ -25,7 +22,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Capabilities" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
-  <noscript><style>.gate { display: none }</style></noscript>
+  <noscript><style>.start-cta, .filters { display: none }</style></noscript>
 </head>
 <body>
   <!-- ======================= Nav ======================= -->
@@ -51,7 +48,7 @@
     </section>
 
     <!-- ======================= Summary ======================= -->
-    <section class="summary" data-reveal aria-live="polite">
+    <section class="summary idle" id="summary" data-reveal aria-live="polite">
       <div class="summary-inner">
         <p class="summary-figure">
           <span id="score-num" class="score-num">–</span><span class="score-of">/<span id="score-total">–</span></span>
@@ -67,7 +64,12 @@
           <span class="legend-chip"><i class="dot dot-warn"></i><b id="legend-partial">0</b> partial</span>
           <span class="legend-chip"><i class="dot dot-bad"></i><b id="legend-bad">0</b> unavailable</span>
         </div>
-        <p id="summary-note" class="summary-note">Waiting to begin…</p>
+        <div id="start-cta" class="start-cta">
+          <button id="start-btn" class="btn btn-primary start-btn" type="button">Run the checks</button>
+          <p class="cta-sub"><b id="cta-count">12</b> checks run entirely on your device — nothing is uploaded.</p>
+        </div>
+        <p id="summary-note" class="summary-note" hidden>Checking…</p>
+        <noscript><p class="summary-note">JavaScript is required to run these checks.</p></noscript>
       </div>
     </section>
 
@@ -91,18 +93,6 @@
   </main>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
-  <!-- ============ Start gate (checks only run after confirmation) ============ -->
-  <div id="start-gate" class="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title">
-    <div class="gate-card">
-      <h2 id="gate-title" class="gate-title">Ready when you are</h2>
-      <p class="gate-sub">
-        <b id="gate-count">12</b> checks run entirely on your device —
-        storage probes, worker registration, GPU queries. Nothing is uploaded.
-      </p>
-      <button id="start-btn" class="btn btn-primary gate-btn" type="button">Run the checks</button>
-    </div>
-  </div>
 
   <!-- ============ PWA update prompt ============ -->
   <div id="update-banner" class="update-banner" role="alert" hidden>

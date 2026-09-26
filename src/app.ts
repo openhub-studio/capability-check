@@ -10,7 +10,7 @@ import { buildReport } from './report.js';
 import { runAll } from './runner.js';
 import { build } from './ui/cards.js';
 import { el } from './ui/dom.js';
-import { initFilters } from './ui/filters.js';
+import { initFilters, setFiltersEnabled } from './ui/filters.js';
 import { toast } from './ui/toast.js';
 
 /* ---------------- hero env line ---------------- */
@@ -118,29 +118,24 @@ if ('serviceWorker' in navigator && window.isSecureContext) {
   });
 }
 
-/* ---------------- start gate ---------------- */
+/* ---------------- idle render + confirmed start ---------------- */
+
+/* Everything renders immediately in a pending state — the user can read
+   exactly which checks will run before consenting. No probe fires until
+   the start button is clicked. */
+build();
+initFilters();
+el('cta-count').textContent = String(FEATURES.length);
 
 function begin(): void {
-  build();
-  initFilters();
+  el('summary').classList.remove('idle');
+  setFiltersEnabled(true);
   runAll();
 }
 
-el('gate-count').textContent = String(FEATURES.length);
-const gate = el('start-gate');
-const startBtn = el<HTMLButtonElement>('start-btn');
-document.documentElement.classList.add('gate-open'); // no scroll behind the gate
-startBtn.addEventListener(
-  'click',
-  () => {
-    gate.classList.add('hidden');
-    document.documentElement.classList.remove('gate-open');
-    setTimeout(() => gate.remove(), 450);
-    begin();
-  },
-  { once: true },
-);
-startBtn.focus();
+el<HTMLButtonElement>('start-btn').addEventListener('click', begin, {
+  once: true,
+});
 
 /* ---------------- mount ---------------- */
 

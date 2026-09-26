@@ -251,6 +251,40 @@ main { display: block; }
 .score-num.is-warn { color: var(--warn); }
 .score-num.is-bad { color: var(--bad); }
 
+/* Idle state — stats stay dimmed until the run is confirmed */
+.summary-figure, .summary-label, .summary-bar, .summary-legend {
+  transition: opacity 500ms var(--ease-std);
+}
+.summary.idle .summary-figure,
+.summary.idle .summary-label,
+.summary.idle .summary-bar,
+.summary.idle .summary-legend { opacity: 0.35; }
+
+/* Start CTA — sits in the summary until confirmed, then dissolves */
+.start-cta {
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transition: opacity 240ms var(--ease-std);
+}
+.start-cta.done { opacity: 0; pointer-events: none; }
+.start-cta[hidden] { display: none; }
+.start-btn {
+  font-size: 15px;
+  padding: 12px 32px;
+}
+.start-btn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+.cta-sub {
+  font-size: 13px;
+  color: var(--muted);
+}
+.cta-sub b { color: var(--ink); font-weight: 600; }
+
 /* ---------------- Filter segmented control ---------------- */
 .filters {
   max-width: 1024px;
@@ -281,6 +315,9 @@ main { display: block; }
   font-variant-numeric: tabular-nums;
 }
 .seg-btn:hover { color: var(--ink); }
+.seg-btn:disabled { opacity: 0.45; cursor: default; }
+.seg-btn:disabled:hover { color: var(--muted); }
+.seg-btn:disabled:active { transform: none; }
 .seg-btn:active { transform: scale(0.97); }
 .seg-btn[aria-pressed="true"] {
   background: var(--surface-raised);
@@ -419,6 +456,9 @@ main { display: block; }
   flex-direction: column;
   gap: 10px;
 }
+/* pending cards show name + description only; the body appears when
+   the probe actually starts */
+.card.is-pending .card-body { display: none; }
 /* skeleton rows while a check is running */
 .meta-row.skel span {
   display: block;
@@ -486,6 +526,11 @@ main { display: block; }
   background: currentColor;
   flex-shrink: 0;
 }
+.badge.pending { background: var(--hairline-soft); color: var(--muted); }
+.badge.pending .badge-dot {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.6px currentColor;
+}
 .badge.checking { background: var(--hairline-soft); color: var(--muted); }
 .badge.checking .badge-dot { animation: pulse 1.1s var(--ease-std) infinite; }
 .badge.supported { background: var(--ok-soft); color: var(--ok); }
@@ -517,67 +562,13 @@ main { display: block; }
 }
 .footer-dim { margin-top: 4px; opacity: 0.7; font-size: 12px; }
 
-/* ---------------- Start gate ---------------- */
-.gate {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(22px) saturate(1.4);
-  -webkit-backdrop-filter: blur(22px) saturate(1.4);
-  transition: opacity 380ms var(--ease-std);
-}
-.gate.hidden {
-  opacity: 0;
-  pointer-events: none;
-}
-.gate-card {
-  width: min(400px, 100%);
-  background: var(--surface);
-  border: 1px solid var(--hairline-soft);
-  border-radius: 28px;
-  padding: 44px 36px 36px;
-  text-align: center;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.14), 0 4px 16px rgba(0, 0, 0, 0.06);
-  transform: translateY(0);
-  transition: transform 380ms var(--ease-out);
-}
-.gate.hidden .gate-card { transform: translateY(12px); }
-.gate-title {
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  margin: 0 0 12px;
-}
-.gate-sub {
-  font-size: 15px;
-  line-height: 1.55;
-  color: var(--muted);
-  margin: 0 0 26px;
-}
-.gate-sub b { color: var(--ink); font-weight: 600; }
-.gate-btn {
-  font-size: 15px;
-  padding: 11px 30px;
-}
-@media (prefers-color-scheme: dark) {
-  .gate { background: rgba(0, 0, 0, 0.55); }
-  .gate-card {
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0, 0, 0, 0.3);
-  }
-}
-
 /* ---------------- Update banner ---------------- */
 .update-banner {
   position: fixed;
   left: 50%;
   bottom: 24px;
   transform: translateX(-50%) translateY(0);
-  z-index: 70; /* above the start gate — updates take priority */
+  z-index: 70; /* floats above page content — updates take priority */
   display: flex;
   align-items: center;
   gap: 14px;
@@ -597,7 +588,7 @@ main { display: block; }
   .update-banner[hidden] { transform: translateY(16px); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .gate, .gate-card, .update-banner { transition: none; }
+  .start-cta, .update-banner { transition: none; }
 }
 
 /* ---------------- Toast ---------------- */
