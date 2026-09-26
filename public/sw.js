@@ -2,10 +2,10 @@
    capability-check service worker — offline app shell.
    - install: precache the app shell
    - activate: drop old cache versions, claim clients
-   - fetch: navigations = network-first (fall back to cached '/');
-     other same-origin GETs = cache-first, then network + store
+   - fetch: network-first for all same-origin GETs (navigations fall
+     back to cached '/'), cache is the offline fallback only
    ============================================================ */
-const VERSION = 'cc-v2';
+const VERSION = 'cc-v3';
 const SHELL = ['/', '/index.html', '/styles/main.css', '/manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {
@@ -40,31 +40,30 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) {
     return;
   }
-  if (req.mode === 'navigate') {
-    event.respondWith(
-      fetch(req)
-        .then((res) => {
+  /* Network-first for everything same-origin: code and markup must never
+     serve stale after a deploy (a cached gate-less app.js would bypass the
+     start gate entirely). The cache is the offline fallback, not the source
+     of truth. */
+  const isNav = req.mode === 'navigate';
+  event.respondWith(
+    fetch(req)
+      .then((res) => {
+        if (res.ok) {
           const copy = res.clone();
           caches.open(VERSION).then((c) => c.put(req, copy));
-          return res;
-        })
-        .catch(() =>
-          caches.match(req).then((hit) => hit || caches.match('/')),
-        ),
-    );
-    return;
-  }
-  event.respondWith(
-    caches.match(req).then(
-      (hit) =>
-        hit ||
-        fetch(req).then((res) => {
-          if (res.ok) {
-            const copy = res.clone();
-            caches.open(VERSION).then((c) => c.put(req, copy));
-          }
-          return res;
-        }),
-    ),
+        }
+        return res;
+      })
+      .catch(() =>
+        caches
+          .match(req)
+          .then(
+            (hit) =>
+              hit ||
+              (isNav
+                ? caches.match('/')
+                : Promise.reject(new Error('offline and not cached'))),
+          ),
+      ),
   );
 });

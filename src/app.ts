@@ -129,10 +129,12 @@ function begin(): void {
 el('gate-count').textContent = String(FEATURES.length);
 const gate = el('start-gate');
 const startBtn = el<HTMLButtonElement>('start-btn');
+document.documentElement.classList.add('gate-open'); // no scroll behind the gate
 startBtn.addEventListener(
   'click',
   () => {
     gate.classList.add('hidden');
+    document.documentElement.classList.remove('gate-open');
     setTimeout(() => gate.remove(), 450);
     begin();
   },
