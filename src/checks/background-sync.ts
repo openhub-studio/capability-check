@@ -1,9 +1,10 @@
+import { msg } from '../i18n/index.js';
 import type { CheckResult, Feature, MetaItem } from '../types.js';
 
 export const backgroundSync: Feature = {
   id: 'background-sync',
-  name: 'Background Sync',
-  tag: 'Deferred work',
+  name: msg('check.bgsync.name'),
+  tag: msg('check.bgsync.tag'),
   group: 'pwa',
   docs: 'https://developer.mozilla.org/en-US/docs/Web/API/Background_Synchronization_API',
   icon: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -12,19 +13,19 @@ export const backgroundSync: Feature = {
     <path d="M20 15a8 8 0 0 1-14.1 2.4L3.5 15"/>
     <path d="M3.5 20v-5h5"/>
   </svg>`,
-  description:
-    'Lets a service worker retry failed requests and run periodic work in the background.',
+  description: msg('check.bgsync.desc'),
   async detect(): Promise<CheckResult> {
     const swApi = 'serviceWorker' in navigator;
     if (!('ServiceWorkerRegistration' in window)) {
       return {
         status: 'unsupported',
-        detail:
-          'No service worker support — background sync cannot exist here.',
+        detail: msg('check.bgsync.noSw'),
         meta: [
           {
-            label: 'Service Worker API',
-            value: swApi ? 'Present (limited)' : 'Missing',
+            label: msg('check.bgsync.meta.swApi'),
+            value: swApi
+              ? msg('check.bgsync.meta.swApiLimited')
+              : msg('meta.missing'),
             ok: false,
           },
         ],
@@ -35,15 +36,23 @@ export const backgroundSync: Feature = {
     const periodic = 'periodicSync' in proto; // PeriodicSyncManager
 
     const meta: MetaItem[] = [
-      { label: 'Service Worker API', value: 'Present', ok: true },
       {
-        label: 'One-off sync',
-        value: sync ? 'SyncManager on registrations' : 'Unavailable',
+        label: msg('check.bgsync.meta.swApi'),
+        value: msg('check.bgsync.meta.swApiPresent'),
+        ok: true,
+      },
+      {
+        label: msg('check.bgsync.meta.sync'),
+        value: sync
+          ? msg('check.bgsync.meta.syncValue')
+          : msg('meta.unavailable'),
         ok: sync,
       },
       {
-        label: 'Periodic sync',
-        value: periodic ? 'PeriodicSyncManager on registrations' : 'Unavailable',
+        label: msg('check.bgsync.meta.periodic'),
+        value: periodic
+          ? msg('check.bgsync.meta.periodicValue')
+          : msg('meta.unavailable'),
         ok: periodic,
       },
     ];
@@ -51,20 +60,20 @@ export const backgroundSync: Feature = {
     if (sync && periodic) {
       return {
         status: 'supported',
-        detail: 'One-off and periodic background sync are both available.',
+        detail: msg('check.bgsync.both'),
         meta,
       };
     }
     if (sync) {
       return {
         status: 'partial',
-        detail: 'Basic sync works; periodic background sync is missing.',
+        detail: msg('check.bgsync.partial'),
         meta,
       };
     }
     return {
       status: 'unsupported',
-      detail: 'This browser does not implement background sync.',
+      detail: msg('check.bgsync.no'),
       meta,
     };
   },

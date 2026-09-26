@@ -1,3 +1,4 @@
+import { msg } from '../i18n/index.js';
 import type { CheckResult, Feature, MetaItem } from '../types.js';
 import { formatBytes, tryProbe } from './common.js';
 
@@ -24,8 +25,8 @@ async function roundtrip(): Promise<'ok' | 'write-failed' | 'error'> {
 
 export const cacheStorage: Feature = {
   id: 'cache-storage',
-  name: 'Cache Storage',
-  tag: 'Offline assets',
+  name: msg('check.cache.name'),
+  tag: msg('check.cache.tag'),
   group: 'storage',
   docs: 'https://developer.mozilla.org/en-US/docs/Web/API/CacheStorage',
   icon: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -33,21 +34,19 @@ export const cacheStorage: Feature = {
     <path d="M4 5.5v13c0 1.55 3.58 2.8 8 2.8s8-1.25 8-2.8v-13"/>
     <path d="M4 12c0 1.55 3.58 2.8 8 2.8s8-1.25 8-2.8"/>
   </svg>`,
-  description:
-    'Programmatic request/response storage — what service workers use to keep apps working offline.',
+  description: msg('check.cache.desc'),
   async detect(): Promise<CheckResult> {
     if (!('caches' in window)) {
       return {
         status: 'unsupported',
-        detail:
-          'window.caches is absent (API missing or insecure context).',
+        detail: msg('check.cache.noApi'),
       };
     }
     const meta: MetaItem[] = [];
     const est = await tryProbe(navigator.storage?.estimate?.());
     if (est?.quota) {
       meta.push({
-        label: 'Origin quota',
+        label: msg('meta.quota'),
         value: formatBytes(est.quota),
       });
     }
@@ -55,25 +54,25 @@ export const cacheStorage: Feature = {
     const t0 = performance.now();
     const res = await tryProbe(roundtrip());
     const ms = Math.max(1, Math.round(performance.now() - t0));
-    meta.push({ label: 'Roundtrip latency', value: ms + ' ms' });
+    meta.push({ label: msg('meta.roundtrip'), value: ms + ' ms' });
 
     if (res === 'ok') {
       return {
         status: 'supported',
-        detail: 'Write/read/delete roundtrip succeeded.',
+        detail: msg('check.cache.ok'),
         meta,
       };
     }
     if (res === 'write-failed') {
       return {
         status: 'partial',
-        detail: 'Cache opened but the readback came up empty.',
+        detail: msg('check.cache.writeFail'),
         meta,
       };
     }
     return {
       status: 'unsupported',
-      detail: 'API exists but a real write failed — storage may be disabled.',
+      detail: msg('check.cache.fail'),
       meta,
     };
   },

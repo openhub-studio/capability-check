@@ -3,11 +3,13 @@
 
 import { FEATURES } from './checks/index.js';
 import { env } from './environment.js';
+import { locale, resolve } from './i18n/index.js';
 import { results } from './state.js';
 import type { UiStatus } from './ui/cards.js';
 
 export interface Report {
   tool: string;
+  locale: string;
   timestamp: string;
   environment: {
     browser: string;
@@ -36,6 +38,7 @@ export interface Report {
 export function buildReport(): Report {
   const out: Report = {
     tool: 'capability-check',
+    locale,
     timestamp: new Date().toISOString(),
     environment: {
       browser: env.name,
@@ -59,13 +62,13 @@ export function buildReport(): Report {
       out.summary[status] += 1;
     }
     const entry: Report['features'][string] = {
-      name: f.name,
+      name: resolve(f.name),
       status,
-      detail: r ? r.detail : null,
+      detail: r ? resolve(r.detail) : null,
     };
     if (r && Array.isArray(r.meta) && r.meta.length) {
       const metaMap: Record<string, string> = {};
-      for (const m of r.meta) metaMap[m.label] = m.value;
+      for (const m of r.meta) metaMap[resolve(m.label)] = resolve(m.value);
       entry.meta = metaMap;
     }
     out.features[f.id] = entry;

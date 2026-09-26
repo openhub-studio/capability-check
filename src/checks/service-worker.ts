@@ -1,3 +1,4 @@
+import { msg } from '../i18n/index.js';
 import type { CheckResult, Feature, MetaItem } from '../types.js';
 import { tryProbe } from './common.js';
 
@@ -39,27 +40,26 @@ async function probeRegistration(): Promise<{
 
 export const serviceWorker: Feature = {
   id: 'service-worker',
-  name: 'Service Worker',
-  tag: 'Offline core',
+  name: msg('check.sw.name'),
+  tag: msg('check.sw.tag'),
   group: 'pwa',
   docs: 'https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API',
   icon: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
     <path d="M20.5 12a8.5 8.5 0 1 1-2.49-6.01"/>
     <path d="M20.5 3.5v4h-4"/>
   </svg>`,
-  description:
-    'A scriptable network proxy that enables offline support, caching strategies, and push delivery.',
+  description: msg('check.sw.desc'),
   async detect(): Promise<CheckResult> {
     if (!('serviceWorker' in navigator)) {
       return {
         status: 'unsupported',
-        detail: 'navigator.serviceWorker is not exposed by this browser.',
+        detail: msg('check.sw.noApi'),
       };
     }
     if (!window.isSecureContext) {
       return {
         status: 'unsupported',
-        detail: 'Service workers require a secure context (HTTPS or localhost).',
+        detail: msg('check.sw.insecure'),
       };
     }
 
@@ -76,27 +76,31 @@ export const serviceWorker: Feature = {
     if (!outcome) {
       return {
         status: 'unsupported',
-        detail:
-          'API is present but a real registration failed or timed out.',
+        detail: msg('check.sw.regFail'),
       };
     }
 
     const { reg, activated } = outcome;
     const meta: MetaItem[] = [
-      { label: 'Probe scope', value: reg.scope },
+      { label: msg('check.sw.meta.scope'), value: reg.scope },
       {
-        label: 'Activation',
-        value: activated ? 'Worker reached activated state' : 'Not confirmed',
+        label: msg('check.sw.meta.activation'),
+        value: activated
+          ? msg('check.sw.meta.activationOk')
+          : msg('check.sw.meta.activationUnknown'),
         ok: activated,
       },
       {
-        label: 'Page controlled',
-        value: navigator.serviceWorker.controller ? 'Yes' : 'No',
+        label: msg('check.sw.meta.controlled'),
+        value: navigator.serviceWorker.controller
+          ? msg('meta.yes')
+          : msg('meta.no'),
         ok: null,
       },
       {
-        label: 'Registrations on origin',
-        value: existing !== undefined ? String(existing) : 'Unknown',
+        label: msg('check.sw.meta.regCount'),
+        value:
+          existing !== undefined ? String(existing) : msg('meta.unknown'),
       },
     ];
     try {
@@ -107,8 +111,8 @@ export const serviceWorker: Feature = {
     return {
       status: activated ? 'supported' : 'partial',
       detail: activated
-        ? 'A test worker registered, activated, and released successfully.'
-        : 'Registration worked but activation could not be confirmed.',
+        ? msg('check.sw.ok')
+        : msg('check.sw.partial'),
       meta,
     };
   },

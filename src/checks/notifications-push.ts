@@ -1,17 +1,17 @@
+import { msg } from '../i18n/index.js';
 import type { CheckResult, Feature, MetaItem } from '../types.js';
 
 export const notificationsPush: Feature = {
   id: 'notifications-push',
-  name: 'Notifications & Push',
-  tag: 'Re-engagement',
+  name: msg('check.push.name'),
+  tag: msg('check.push.tag'),
   group: 'engagement',
   docs: 'https://developer.mozilla.org/en-US/docs/Web/API/Push_API',
   icon: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
     <path d="M18 9a6 6 0 1 0-12 0c0 6-2.5 7-2.5 7h17S18 15 18 9z"/>
     <path d="M10 20a2.2 2.2 0 0 0 4 0"/>
   </svg>`,
-  description:
-    'Local notifications plus push messages delivered to the service worker while the app is closed.',
+  description: msg('check.push.desc'),
   async detect(): Promise<CheckResult> {
     const notif =
       typeof Notification !== 'undefined' && 'permission' in Notification;
@@ -24,20 +24,20 @@ export const notificationsPush: Feature = {
 
     const meta: MetaItem[] = [
       {
-        label: 'Notification API',
-        value: notif ? 'Available' : 'Unavailable',
+        label: msg('check.push.meta.notifApi'),
+        value: notif ? msg('meta.available') : msg('meta.unavailable'),
         ok: notif,
       },
       {
-        label: 'Push API',
-        value: push ? 'Available' : 'Unavailable',
+        label: msg('check.push.meta.pushApi'),
+        value: push ? msg('meta.available') : msg('meta.unavailable'),
         ok: push,
       },
       {
-        label: 'Delivery path',
+        label: msg('check.push.meta.path'),
         value: swApi
-          ? 'Service worker present — push can reach a closed app'
-          : 'No service worker — push cannot be delivered',
+          ? msg('check.push.meta.pathOk')
+          : msg('check.push.meta.pathNo'),
         ok: swApi ? true : push ? false : null,
       },
     ];
@@ -52,15 +52,24 @@ export const notificationsPush: Feature = {
           ).supportedContentEncodings
         : undefined;
     if (push && enc?.length) {
-      meta.push({ label: 'Push encodings', value: enc.join(', ') });
+      meta.push({
+        label: msg('check.push.meta.encodings'),
+        value: enc.join(', '),
+      });
     }
 
     let perm: NotificationPermission | null = null;
     if (notif) {
       perm = Notification.permission;
       meta.push({
-        label: 'Permission',
-        value: perm[0]!.toUpperCase() + perm.slice(1),
+        label: msg('check.push.meta.permission'),
+        value: msg(
+          perm === 'granted'
+            ? 'perm.granted'
+            : perm === 'denied'
+              ? 'perm.denied'
+              : 'perm.default',
+        ),
         ok: perm === 'granted' ? true : perm === 'denied' ? false : null,
       });
     }
@@ -69,16 +78,16 @@ export const notificationsPush: Feature = {
       if (perm === 'denied') {
         return {
           status: 'partial',
-          detail:
-            'Both APIs exist, but notifications are blocked in browser settings — prompts will never show.',
+          detail: msg('check.push.denied'),
           meta,
         };
       }
       return {
         status: 'supported',
         detail:
-          'Both notification display and push delivery are available.' +
-          (perm === 'granted' ? ' Permission is already granted.' : ''),
+          perm === 'granted'
+            ? msg('check.push.okGranted')
+            : msg('check.push.ok'),
         meta,
       };
     }
@@ -86,14 +95,14 @@ export const notificationsPush: Feature = {
       return {
         status: 'partial',
         detail: notif
-          ? 'Notifications work but the Push API (or its service worker plumbing) is missing.'
-          : 'Push plumbing exists but notifications are unavailable.',
+          ? msg('check.push.notifOnly')
+          : msg('check.push.pushOnly'),
         meta,
       };
     }
     return {
       status: 'unsupported',
-      detail: 'Neither notifications nor push messaging is available.',
+      detail: msg('check.push.no'),
       meta,
     };
   },

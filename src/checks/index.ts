@@ -5,19 +5,20 @@
    1. Create src/checks/my-check.ts exporting a Feature object:
 
         import type { Feature } from '../types.js';
+        import { msg } from '../i18n/index.js';
 
         export const myCheck: Feature = {
-          id: 'my-check',              // unique key
-          name: 'My Check',            // display name
-          tag: 'v1',                   // small line under the name
-          group: 'compute',            // key of an entry in groups.ts
-          docs: 'https://…',           // "Learn more" link
-          icon: '<svg …></svg>',       // 24×24, stroke-based
-          description: 'One sentence shown on the card.',
+          id: 'my-check',                    // unique key
+          name: msg('check.myCheck.name'),   // add keys to i18n/en.ts + zh.ts
+          tag: msg('check.myCheck.tag'),     // small line under the name
+          group: 'compute',                  // key of an entry in groups.ts
+          docs: 'https://…',                 // "Learn more" link
+          icon: '<svg …></svg>',             // 24×24, stroke-based
+          description: msg('check.myCheck.desc'),
           async detect(): Promise<CheckResult> {
             // status: 'supported' | 'partial' | 'unsupported'
-            // meta:   optional [{ label, value, ok }] rows
-            return { status: 'supported', detail: '…' };
+            // meta:   optional [{ label, value, ok }] rows — msg() or literal
+            return { status: 'supported', detail: msg('check.myCheck.ok') };
           },
         };
 

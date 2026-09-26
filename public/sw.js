@@ -5,7 +5,7 @@
    - fetch: network-first for all same-origin GETs (navigations fall
      back to cached '/'), cache is the offline fallback only
    ============================================================ */
-const VERSION = 'cc-v4';
+const VERSION = 'cc-v6';
 const SHELL = ['/', '/index.html', '/styles/main.css', '/manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {

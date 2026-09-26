@@ -1,9 +1,10 @@
+import { msg } from '../i18n/index.js';
 import type { CheckResult, Feature, MetaItem } from '../types.js';
 
 export const secureContext: Feature = {
   id: 'secure-context',
-  name: 'Secure Context',
-  tag: 'HTTPS',
+  name: msg('check.secure.name'),
+  tag: msg('check.secure.tag'),
   group: 'pwa',
   docs: 'https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts',
   icon: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -11,8 +12,7 @@ export const secureContext: Feature = {
     <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>
     <circle cx="12" cy="15" r="1.4"/>
   </svg>`,
-  description:
-    'Service workers, install prompts, and most PWA APIs require the page to be served over HTTPS or localhost.',
+  description: msg('check.secure.desc'),
   async detect(): Promise<CheckResult> {
     const ok = window.isSecureContext;
     const host = window.location.hostname || '(file)';
@@ -21,16 +21,22 @@ export const secureContext: Feature = {
     const isolated = window.crossOriginIsolated === true;
 
     const meta: MetaItem[] = [
-      { label: 'Protocol', value: proto },
-      { label: 'Host', value: host },
+      { label: msg('check.secure.meta.protocol'), value: proto },
+      { label: msg('check.secure.meta.host'), value: host },
       {
-        label: 'Potentially trustworthy',
-        value: ok ? 'Yes' : localhost ? 'Localhost should qualify' : 'No',
+        label: msg('check.secure.meta.trust'),
+        value: ok
+          ? msg('meta.yes')
+          : localhost
+            ? msg('check.secure.meta.trustLocal')
+            : msg('meta.no'),
         ok: ok ? true : localhost ? null : false,
       },
       {
-        label: 'Cross-origin isolated',
-        value: isolated ? 'Enabled (COOP/COEP set)' : 'Off',
+        label: msg('check.secure.meta.coep'),
+        value: isolated
+          ? msg('check.secure.meta.coepOn')
+          : msg('check.secure.meta.coepOff'),
         ok: isolated ? true : null,
       },
     ];
@@ -38,8 +44,8 @@ export const secureContext: Feature = {
     return {
       status: ok ? 'supported' : 'unsupported',
       detail: ok
-        ? 'This page is running in a secure context — powerful APIs are unlocked.'
-        : 'Not a secure context — service workers, WebGPU, and install prompts are blocked.',
+        ? msg('check.secure.ok')
+        : msg('check.secure.no'),
       meta,
     };
   },

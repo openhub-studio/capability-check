@@ -1,9 +1,10 @@
+import { msg } from '../i18n/index.js';
 import type { CheckResult, Feature, MetaItem } from '../types.js';
 
 export const webShare: Feature = {
   id: 'web-share',
-  name: 'Web Share',
-  tag: 'OS share sheet',
+  name: msg('check.share.name'),
+  tag: msg('check.share.tag'),
   group: 'engagement',
   docs: 'https://developer.mozilla.org/en-US/docs/Web/API/Web_Share_API',
   icon: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -12,8 +13,7 @@ export const webShare: Feature = {
     <circle cx="17.5" cy="18.5" r="2.6"/>
     <path d="M8.3 10.8l7-4M8.3 13.2l7 4"/>
   </svg>`,
-  description:
-    'Hands text, links, and files to the operating system share sheet — the native sharing path for installed apps.',
+  description: msg('check.share.desc'),
   async detect(): Promise<CheckResult> {
     const share = typeof navigator.share === 'function';
     const canShare = typeof navigator.canShare === 'function';
@@ -38,30 +38,34 @@ export const webShare: Feature = {
     const meta: MetaItem[] = [
       {
         label: 'share()',
-        value: share ? 'Available' : 'Unavailable',
+        value: share ? msg('meta.available') : msg('meta.unavailable'),
         ok: share,
       },
       {
         label: 'canShare()',
-        value: canShare ? 'Available' : 'Unavailable',
+        value: canShare ? msg('meta.available') : msg('meta.unavailable'),
         ok: canShare,
       },
     ];
     if (canShare) {
       meta.push({
-        label: 'URL payload',
+        label: msg('check.share.meta.url'),
         value:
-          urlShare === null ? 'Not verifiable' : urlShare ? 'Accepted' : 'Rejected',
+          urlShare === null
+            ? msg('check.share.meta.unverifiable')
+            : urlShare
+              ? msg('check.share.meta.accepted')
+              : msg('check.share.meta.rejected'),
         ok: urlShare,
       });
       meta.push({
-        label: 'File payload',
+        label: msg('check.share.meta.file'),
         value:
           fileShare === null
-            ? 'Not verifiable'
+            ? msg('check.share.meta.unverifiable')
             : fileShare
-              ? 'Accepted'
-              : 'Rejected',
+              ? msg('check.share.meta.accepted')
+              : msg('check.share.meta.rejected'),
         ok: fileShare,
       });
     }
@@ -71,15 +75,14 @@ export const webShare: Feature = {
         status: fileShare === false ? 'partial' : 'supported',
         detail:
           fileShare === false
-            ? 'navigator.share works for text/links, but this browser rejects file payloads.'
-            : 'navigator.share is available — the OS share sheet can be invoked.',
+            ? msg('check.share.noFiles')
+            : msg('check.share.ok'),
         meta,
       };
     }
     return {
       status: 'unsupported',
-      detail:
-        'navigator.share is not exposed (may require HTTPS on this platform).',
+      detail: msg('check.share.noApi'),
       meta,
     };
   },

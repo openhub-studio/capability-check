@@ -1,10 +1,11 @@
+import { msg } from '../i18n/index.js';
 import type { CheckResult, Feature, MetaItem } from '../types.js';
 import { tryProbe } from './common.js';
 
 export const webgpu: Feature = {
   id: 'webgpu',
-  name: 'WebGPU',
-  tag: 'GPU for the web',
+  name: msg('check.webgpu.name'),
+  tag: msg('check.webgpu.tag'),
   group: 'graphics',
   docs: 'https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API',
   icon: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -12,27 +13,25 @@ export const webgpu: Feature = {
     <rect x="10" y="10" width="4" height="4" rx="1"/>
     <path d="M9 2.8V6M15 2.8V6M9 18v3.2M15 18v3.2M2.8 9H6M2.8 15H6M18 9h3.2M18 15h3.2"/>
   </svg>`,
-  description:
-    'A modern low-level API for GPU rendering and general-purpose compute on the web.',
+  description: msg('check.webgpu.desc'),
   async detect(): Promise<CheckResult> {
     if (!window.isSecureContext) {
       return {
         status: 'unsupported',
-        detail: 'WebGPU requires a secure context (HTTPS or localhost).',
+        detail: msg('check.webgpu.insecure'),
       };
     }
     if (!('gpu' in navigator)) {
       return {
         status: 'unsupported',
-        detail: 'navigator.gpu is not exposed by this browser.',
+        detail: msg('check.webgpu.noApi'),
       };
     }
     const adapter = await tryProbe(navigator.gpu.requestAdapter(), 5000);
     if (!adapter) {
       return {
         status: 'unsupported',
-        detail:
-          'The API is present, but requestAdapter() returned no adapter — no usable GPU was found.',
+        detail: msg('check.webgpu.noAdapter'),
       };
     }
     // Adapter info: `adapter.info` (current spec) or
@@ -48,12 +47,20 @@ export const webgpu: Feature = {
     }
     const meta: MetaItem[] = [];
     if (info) {
-      if (info.vendor) meta.push({ label: 'Vendor', value: info.vendor });
+      if (info.vendor)
+        meta.push({ label: msg('check.webgpu.meta.vendor'), value: info.vendor });
       if (info.architecture)
-        meta.push({ label: 'Architecture', value: info.architecture });
-      if (info.device) meta.push({ label: 'Device', value: info.device });
+        meta.push({
+          label: msg('check.webgpu.meta.arch'),
+          value: info.architecture,
+        });
+      if (info.device)
+        meta.push({ label: msg('check.webgpu.meta.device'), value: info.device });
       else if (info.description)
-        meta.push({ label: 'Device', value: info.description });
+        meta.push({
+          label: msg('check.webgpu.meta.device'),
+          value: info.description,
+        });
     }
     // `isFallbackAdapter` existed in earlier spec drafts; probe it loosely.
     const isFallback =
@@ -61,12 +68,12 @@ export const webgpu: Feature = {
 
     const features = adapter.features;
     meta.push({
-      label: 'Optional features',
-      value: String(features.size) + ' exposed',
+      label: msg('check.webgpu.meta.features'),
+      value: msg('check.webgpu.meta.featuresValue', { n: features.size }),
     });
     try {
       meta.push({
-        label: 'Canvas format',
+        label: msg('check.webgpu.meta.canvasFormat'),
         value: navigator.gpu.getPreferredCanvasFormat(),
       });
     } catch {
@@ -74,21 +81,22 @@ export const webgpu: Feature = {
     }
     const limits = adapter.limits;
     meta.push({
-      label: 'Max 2D texture',
+      label: msg('check.webgpu.meta.maxTex'),
       value: limits.maxTextureDimension2D.toLocaleString() + ' px',
     });
     meta.push({
-      label: 'Workgroup size',
-      value: limits.maxComputeInvocationsPerWorkgroup.toLocaleString() +
-        ' invocations',
+      label: msg('check.webgpu.meta.workgroup'),
+      value: msg('check.webgpu.meta.workgroupValue', {
+        n: limits.maxComputeInvocationsPerWorkgroup.toLocaleString(),
+      }),
     });
 
     // Deeper probe: actually request a device — adapter presence alone
     // does not guarantee a usable context.
     const device = await tryProbe(adapter.requestDevice(), 5000);
     meta.push({
-      label: 'Device acquisition',
-      value: device ? 'Passed' : 'Failed',
+      label: msg('check.webgpu.meta.deviceAcq'),
+      value: device ? msg('meta.passed') : msg('meta.failed'),
       ok: device !== null,
     });
     device?.destroy();
@@ -96,22 +104,20 @@ export const webgpu: Feature = {
     if (isFallback) {
       return {
         status: 'partial',
-        detail:
-          'Only a software fallback adapter is available — hardware acceleration may be off.',
+        detail: msg('check.webgpu.fallback'),
         meta,
       };
     }
     if (!device) {
       return {
         status: 'partial',
-        detail:
-          'An adapter exists but requestDevice() failed — GPU access is blocked.',
+        detail: msg('check.webgpu.deviceFail'),
         meta,
       };
     }
     return {
       status: 'supported',
-      detail: 'A hardware GPU adapter was returned and a device was created.',
+      detail: msg('check.webgpu.ok'),
       meta,
     };
   },

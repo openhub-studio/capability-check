@@ -4,6 +4,7 @@
 
 import { FEATURES } from '../checks/index.js';
 import { GROUPS } from '../groups.js';
+import { t } from '../i18n/index.js';
 import { results, run } from '../state.js';
 import { groupEls } from './cards.js';
 import { el } from './dom.js';
@@ -23,7 +24,10 @@ function updateGroupCounts(): void {
     ).length;
     const done = members.every((f) => results[f.id]);
     handles.count.hidden = !done;
-    handles.count.textContent = ok + '/' + members.length + ' supported';
+    handles.count.textContent = t('group.count', {
+      ok,
+      total: members.length,
+    });
   }
 }
 
@@ -50,7 +54,7 @@ export function updateSummary(): void {
   note.hidden = !run.started;
 
   setText('score-total', String(total));
-  numEl.textContent = String(okCount);
+  numEl.textContent = run.started ? String(okCount) : '–';
 
   if (total) {
     fillOk.style.width = (okCount / total) * 100 + '%';
@@ -67,10 +71,13 @@ export function updateSummary(): void {
 
   numEl.classList.remove('is-good', 'is-warn', 'is-bad');
 
+  // Idle — stats refreshed above; leave the CTA to its idle copy.
+  if (!run.started) return;
+
   if (done !== total) {
     startBtn.disabled = true;
-    startBtn.textContent = 'Checking… ' + done + '/' + total;
-    note.textContent = 'Checking…';
+    startBtn.textContent = t('cta.progress', { done, total });
+    note.textContent = t('note.checking');
     return;
   }
 
@@ -82,20 +89,17 @@ export function updateSummary(): void {
 
   if (okCount === total && partial === 0) {
     numEl.classList.add('is-good');
-    note.textContent =
-      'Everything on this list works here — no fallbacks needed.';
+    note.textContent = t('note.allGood');
   } else if (okCount === 0 && partial === 0) {
     numEl.classList.add('is-bad');
-    note.textContent =
-      'None of these features are available in this browser.';
+    note.textContent = t('note.noneGood');
   } else {
     numEl.classList.add('is-warn');
     const missing = total - okCount;
-    note.textContent =
-      missing + ' of ' + total + ' features ' +
-      (missing === 1
-        ? 'is unavailable or limited — apps may need a fallback.'
-        : 'are unavailable or limited — apps may need fallbacks.');
+    note.textContent = t(
+      missing === 1 ? 'note.missingOne' : 'note.missingMany',
+      { missing, total },
+    );
   }
   el<HTMLButtonElement>('rerun').hidden = false;
   el<HTMLButtonElement>('copy-report').hidden = false;

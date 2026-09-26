@@ -4,18 +4,24 @@
 
 import { FEATURES } from '../checks/index.js';
 import { GROUPS } from '../groups.js';
-import type { CheckStatus, Feature } from '../types.js';
+import { msg, resolve, t, type I18nKey } from '../i18n/index.js';
+import { results } from '../state.js';
+import type { CheckStatus, Feature, FeatureGroup } from '../types.js';
 import { el, mustQuery } from './dom.js';
 
 export type UiStatus = CheckStatus | 'checking' | 'pending';
 
-export const STATUS_LABEL: Record<UiStatus, string> = {
-  pending: 'Pending',
-  checking: 'Checking',
-  supported: 'Supported',
-  partial: 'Partial',
-  unsupported: 'Not supported',
+export const STATUS_KEY: Record<UiStatus, I18nKey> = {
+  pending: 'status.pending',
+  checking: 'status.checking',
+  supported: 'status.supported',
+  partial: 'status.partial',
+  unsupported: 'status.unsupported',
 };
+
+export function statusLabel(status: UiStatus): string {
+  return t(STATUS_KEY[status]);
+}
 
 export interface CardEls {
   card: HTMLElement;
@@ -90,22 +96,22 @@ function featureCard(f: Feature, index: number): HTMLElement {
     '</div>' +
     '<h3 class="card-name"></h3>' +
     '<span class="card-tag"></span>';
-  mustQuery(titleWrap, '.card-name').textContent = f.name;
+  mustQuery(titleWrap, '.card-name').textContent = resolve(f.name);
   const tag = mustQuery<HTMLElement>(titleWrap, '.card-tag');
-  if (f.tag) tag.textContent = f.tag;
+  if (f.tag) tag.textContent = resolve(f.tag);
   else tag.remove();
 
   const badge = document.createElement('span');
   badge.className = 'badge pending';
   badge.innerHTML =
     '<span class="badge-dot"></span><span class="badge-text"></span>';
-  mustQuery(badge, '.badge-text').textContent = STATUS_LABEL.pending;
+  mustQuery(badge, '.badge-text').textContent = statusLabel('pending');
 
   head.append(titleWrap, badge);
 
   const desc = document.createElement('p');
   desc.className = 'card-desc';
-  desc.textContent = f.description;
+  desc.textContent = resolve(f.description);
 
   const body = document.createElement('div');
   body.className = 'card-body';
@@ -121,7 +127,7 @@ function featureCard(f: Feature, index: number): HTMLElement {
     a.href = f.docs;
     a.target = '_blank';
     a.rel = 'noopener';
-    a.innerHTML = 'Learn more <span class="arrow">→</span>';
+    a.innerHTML = t('card.learnMore') + ' <span class="arrow">→</span>';
     foot.append(a);
   }
 
@@ -135,8 +141,8 @@ function featureCard(f: Feature, index: number): HTMLElement {
 
 function groupSection(
   key: string,
-  title: string,
-  sub: string | undefined,
+  title: FeatureGroup['title'],
+  sub: FeatureGroup['sub'],
   members: Feature[],
 ): HTMLElement {
   const section = document.createElement('section');
@@ -146,7 +152,7 @@ function groupSection(
   head.className = 'group-head';
   const h = document.createElement('h2');
   h.className = 'group-title';
-  h.textContent = title;
+  h.textContent = resolve(title);
   const count = document.createElement('span');
   count.className = 'group-count';
   count.hidden = true;
@@ -159,7 +165,7 @@ function groupSection(
   if (sub) {
     const p = document.createElement('p');
     p.className = 'group-sub';
-    p.textContent = sub;
+    p.textContent = resolve(sub);
     section.append(head, p, grid);
   } else {
     section.append(head, grid);
@@ -179,6 +185,49 @@ export function build(): void {
   const known = new Set(GROUPS.map((g) => g.key));
   const orphans = FEATURES.filter((f) => !known.has(f.group));
   if (orphans.length) {
-    groupsRoot.append(groupSection('__other__', 'Other', undefined, orphans));
+    groupsRoot.append(
+      groupSection('__other__', msg('group.other.title'), undefined, orphans),
+    );
+  }
+}
+
+/* ---------- locale re-render (no re-run required) ---------- */
+
+/**
+ * Re-resolves every card's name/tag/description and pending/checking
+ * badge, plus group titles/subs — stored results keep their own state
+ * and are re-rendered by runner.rerenderResults().
+ */
+export function renderCardChrome(): void {
+  for (const f of FEATURES) {
+    const els = cardEls[f.id];
+    if (!els) continue;
+    mustQuery(els.card, '.card-name').textContent = resolve(f.name);
+    const tag = els.card.querySelector('.card-tag');
+    if (tag) tag.textContent = f.tag ? resolve(f.tag) : '';
+    mustQuery(els.card, '.card-desc').textContent = resolve(f.description);
+    const link = els.card.querySelector<HTMLElement>('.card-link');
+    if (link) {
+      link.innerHTML = t('card.learnMore') + ' <span class="arrow">→</span>';
+    }
+    if (!results[f.id]) {
+      const pending = els.card.classList.contains('is-pending');
+      els.badge.className = 'badge ' + (pending ? 'pending' : 'checking');
+      mustQuery(els.badge, '.badge-text').textContent = statusLabel(
+        pending ? 'pending' : 'checking',
+      );
+    }
+  }
+  for (const g of GROUPS) {
+    const handles = groupEls[g.key];
+    if (!handles) continue;
+    mustQuery(handles.section, '.group-title').textContent = resolve(g.title);
+    const sub = handles.section.querySelector('.group-sub');
+    if (sub && g.sub) sub.textContent = resolve(g.sub);
+  }
+  const other = groupEls.__other__;
+  if (other) {
+    mustQuery(other.section, '.group-title').textContent =
+      t('group.other.title');
   }
 }

@@ -1,3 +1,4 @@
+import { msg } from '../i18n/index.js';
 import type { CheckResult, Feature, MetaItem } from '../types.js';
 import { hasWASM, WASM_MINIMAL } from './common.js';
 
@@ -59,19 +60,18 @@ export const wasm: Feature = {
     <path d="M12 2.8l8 4.4v9.6l-8 4.4-8-4.4V7.2l8-4.4z"/>
     <path d="M4 7.2l8 4.4 8-4.4M12 11.6v9.6"/>
   </svg>`,
-  description:
-    'A binary instruction format that runs code at near-native speed inside the browser.',
+  description: msg('check.wasm.desc'),
   async detect(): Promise<CheckResult> {
     if (!hasWASM()) {
       return {
         status: 'unsupported',
-        detail: 'The WebAssembly object is not exposed by this browser.',
+        detail: msg('check.wasm.noApi'),
       };
     }
     if (!WebAssembly.validate(WASM_MINIMAL)) {
       return {
         status: 'unsupported',
-        detail: 'WebAssembly exists but failed binary validation.',
+        detail: msg('check.wasm.badValidation'),
       };
     }
 
@@ -93,27 +93,29 @@ export const wasm: Feature = {
 
     const meta: MetaItem[] = [
       {
-        label: 'Streaming compilation',
-        value: streaming ? 'Passed (real compile)' : 'Unavailable',
+        label: msg('check.wasm.meta.streaming'),
+        value: streaming
+          ? msg('check.wasm.meta.streamingOk')
+          : msg('meta.unavailable'),
         ok: streaming,
       },
       {
-        label: 'Threads (shared memory)',
+        label: msg('check.wasm.meta.threads'),
         value: threadsReady
           ? threads.isolated
-            ? 'Ready'
-            : 'Shared memory OK — needs COOP/COEP isolation'
-          : 'Unavailable',
+            ? msg('check.wasm.meta.threadsReady')
+            : msg('check.wasm.meta.threadsNeedsIsolation')
+          : msg('meta.unavailable'),
         ok: threadsReady && threads.isolated ? true : threads.sharedMem ? null : false,
       },
-      { label: 'Probe latency', value: latency + ' ms' },
+      { label: msg('check.wasm.meta.latency'), value: latency + ' ms' },
     ];
 
     return {
       status: instantiated ? 'supported' : 'partial',
       detail: instantiated
-        ? 'Modules validate and instantiate correctly.'
-        : 'Modules validate but could not be instantiated.',
+        ? msg('check.wasm.ok')
+        : msg('check.wasm.partial'),
       meta,
     };
   },

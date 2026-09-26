@@ -6,20 +6,29 @@
 
 import { FEATURES } from './checks/index.js';
 import { env } from './environment.js';
+import {
+  applyStaticTexts,
+  locale,
+  setLocale,
+  t,
+} from './i18n/index.js';
 import { buildReport } from './report.js';
-import { runAll } from './runner.js';
-import { build } from './ui/cards.js';
+import { rerenderResults, runAll } from './runner.js';
+import { build, renderCardChrome } from './ui/cards.js';
 import { el } from './ui/dom.js';
 import { initFilters, setFiltersEnabled } from './ui/filters.js';
+import { updateSummary } from './ui/summary.js';
 import { toast } from './ui/toast.js';
 
 /* ---------------- hero env line ---------------- */
 
-el('hero-env').textContent =
-  env.name +
-  (env.version ? ' ' + env.version : '') +
-  (env.os ? ' · ' + env.os : '') +
-  (window.isSecureContext ? '' : ' · insecure context');
+function renderEnvLine(): void {
+  el('hero-env').textContent =
+    env.name +
+    (env.version ? ' ' + env.version : '') +
+    (env.os ? ' · ' + env.os : '') +
+    (window.isSecureContext ? '' : ' · ' + t('env.insecure'));
+}
 
 /* ---------------- buttons ---------------- */
 
@@ -27,7 +36,7 @@ async function copyReport(): Promise<void> {
   const text = JSON.stringify(buildReport(), null, 2);
   try {
     await navigator.clipboard.writeText(text);
-    toast('Report copied to clipboard');
+    toast(t('toast.copied'));
   } catch {
     const ta = document.createElement('textarea');
     ta.value = text;
@@ -35,9 +44,9 @@ async function copyReport(): Promise<void> {
     ta.select();
     try {
       document.execCommand('copy');
-      toast('Report copied to clipboard');
+      toast(t('toast.copied'));
     } catch {
-      toast('Copy failed — check browser permissions');
+      toast(t('toast.copyFailed'));
     }
     ta.remove();
   }
@@ -118,14 +127,42 @@ if ('serviceWorker' in navigator && window.isSecureContext) {
   });
 }
 
+/* ---------------- locale ---------------- */
+
+/**
+ * Re-renders every localized surface in the current locale. Stored check
+ * results keep msg() references, so re-rendering needs no re-run.
+ */
+function applyLocale(): void {
+  document.documentElement.lang = locale === 'zh' ? 'zh-CN' : 'en';
+  const ctaSub = document.querySelector<HTMLElement>('[data-i18n="cta.sub"]');
+  ctaSub?.setAttribute(
+    'data-i18n-args',
+    JSON.stringify({ count: FEATURES.length }),
+  );
+  applyStaticTexts();
+  renderCardChrome();
+  rerenderResults();
+  updateSummary();
+  renderEnvLine();
+  const langBtn = el<HTMLButtonElement>('lang-toggle');
+  langBtn.textContent = locale === 'zh' ? 'EN' : '中文';
+  langBtn.setAttribute('aria-label', t('nav.langToggle'));
+}
+
+el<HTMLButtonElement>('lang-toggle').addEventListener('click', () => {
+  setLocale(locale === 'zh' ? 'en' : 'zh');
+  applyLocale();
+});
+
 /* ---------------- idle render + confirmed start ---------------- */
 
 /* Everything renders immediately in a pending state — the user can read
    exactly which checks will run before consenting. No probe fires until
    the start button is clicked. */
+applyLocale();
 build();
 initFilters();
-el('cta-count').textContent = String(FEATURES.length);
 
 function begin(): void {
   el('summary').classList.remove('idle');

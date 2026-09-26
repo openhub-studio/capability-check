@@ -1,23 +1,23 @@
+import { msg } from '../i18n/index.js';
 import type { CheckResult, Feature, MetaItem } from '../types.js';
 import { hasWASM, WASM_SIMD_MODULE } from './common.js';
 
 export const wasmSimd: Feature = {
   id: 'wasm-simd',
-  name: 'SIMD',
-  tag: 'WASM SIMD128',
+  name: msg('check.simd.name'),
+  tag: msg('check.simd.tag'),
   group: 'compute',
   docs: 'https://developer.mozilla.org/en-US/docs/WebAssembly/Reference/JavaScript_interface',
   icon: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
     <rect x="3" y="4" width="18" height="16" rx="3"/>
     <path d="M8.2 4v16M12 4v16M15.8 4v16"/>
   </svg>`,
-  description:
-    'Fixed-width 128-bit vector instructions for parallel data processing in WebAssembly.',
+  description: msg('check.simd.desc'),
   async detect(): Promise<CheckResult> {
     if (!hasWASM()) {
       return {
         status: 'unsupported',
-        detail: 'Requires WebAssembly, which is unavailable.',
+        detail: msg('check.simd.noWasm'),
       };
     }
     let validated = false;
@@ -36,35 +36,39 @@ export const wasmSimd: Feature = {
       }
     }
     const meta: MetaItem[] = [
-      { label: 'Vector width', value: '128-bit', ok: validated ? true : null },
       {
-        label: 'Binary validation',
-        value: validated ? 'Passed' : 'Rejected',
+        label: msg('check.simd.meta.width'),
+        value: '128-bit',
+        ok: validated ? true : null,
+      },
+      {
+        label: msg('check.simd.meta.validation'),
+        value: validated ? msg('meta.passed') : msg('check.simd.meta.rejected'),
         ok: validated,
       },
       {
-        label: 'Instantiation',
-        value: instantiated ? 'Passed' : 'Failed',
+        label: msg('check.simd.meta.instantiate'),
+        value: instantiated ? msg('meta.passed') : msg('meta.failed'),
         ok: instantiated ? true : validated ? false : null,
       },
     ];
     if (validated && instantiated) {
       return {
         status: 'supported',
-        detail: 'v128 vector operations validate and instantiate.',
+        detail: msg('check.simd.ok'),
         meta,
       };
     }
     if (validated) {
       return {
         status: 'partial',
-        detail: 'SIMD binaries validate but fail to instantiate on this engine.',
+        detail: msg('check.simd.partial'),
         meta,
       };
     }
     return {
       status: 'unsupported',
-      detail: 'This engine rejects SIMD128 vector instructions.',
+      detail: msg('check.simd.no'),
       meta,
     };
   },
