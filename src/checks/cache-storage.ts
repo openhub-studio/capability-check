@@ -25,7 +25,7 @@ export const cacheStorage: Feature = {
   id: 'cache-storage',
   name: 'Cache Storage',
   tag: 'Offline assets',
-  group: 'pwa',
+  group: 'storage',
   docs: 'https://developer.mozilla.org/en-US/docs/Web/API/CacheStorage',
   icon: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
     <ellipse cx="12" cy="5.5" rx="8" ry="2.8"/>

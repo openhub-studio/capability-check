@@ -41,7 +41,7 @@ export const opfs: Feature = {
   id: 'opfs',
   name: 'OPFS',
   tag: 'File system storage',
-  group: 'pwa',
+  group: 'storage',
   docs: 'https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system',
   icon: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
     <path d="M13 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9l-6-6z"/>

@@ -4,7 +4,7 @@ export const notificationsPush: Feature = {
   id: 'notifications-push',
   name: 'Notifications & Push',
   tag: 'Re-engagement',
-  group: 'pwa',
+  group: 'engagement',
   docs: 'https://developer.mozilla.org/en-US/docs/Web/API/Push_API',
   icon: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
     <path d="M18 9a6 6 0 1 0-12 0c0 6-2.5 7-2.5 7h17S18 15 18 9z"/>

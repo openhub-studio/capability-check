@@ -16,8 +16,18 @@ export const GROUPS: FeatureGroup[] = [
     sub: 'Modern GPU access for rendering and compute.',
   },
   {
+    key: 'storage',
+    title: 'Storage',
+    sub: 'Persistent data — caches, structured records, and files.',
+  },
+  {
     key: 'pwa',
     title: 'Progressive Web App',
     sub: 'What it takes to be installable and work offline.',
+  },
+  {
+    key: 'engagement',
+    title: 'Engagement',
+    sub: 'OS-level touchpoints that keep users connected.',
   },
 ];

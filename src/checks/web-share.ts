@@ -4,7 +4,7 @@ export const webShare: Feature = {
   id: 'web-share',
   name: 'Web Share',
   tag: 'OS share sheet',
-  group: 'pwa',
+  group: 'engagement',
   docs: 'https://developer.mozilla.org/en-US/docs/Web/API/Web_Share_API',
   icon: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="6" cy="12" r="2.6"/>

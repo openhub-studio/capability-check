@@ -37,7 +37,7 @@ export const indexeddb: Feature = {
   id: 'indexeddb',
   name: 'IndexedDB',
   tag: 'Structured storage',
-  group: 'pwa',
+  group: 'storage',
   docs: 'https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API',
   icon: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
     <rect x="3" y="3.5" width="18" height="5" rx="1.5"/>
