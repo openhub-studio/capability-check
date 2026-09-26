@@ -15,4 +15,9 @@ export const GROUPS: FeatureGroup[] = [
     title: 'Graphics',
     sub: 'Modern GPU access for rendering and compute.',
   },
+  {
+    key: 'pwa',
+    title: 'Progressive Web App',
+    sub: 'What it takes to be installable and work offline.',
+  },
 ];

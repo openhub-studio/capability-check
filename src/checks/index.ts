@@ -31,6 +31,26 @@ import type { Feature } from '../types.js';
 import { wasm } from './wasm.js';
 import { wasmSimd } from './wasm-simd.js';
 import { webgpu } from './webgpu.js';
+import { secureContext } from './secure-context.js';
+import { serviceWorker } from './service-worker.js';
+import { installability } from './installability.js';
+import { cacheStorage } from './cache-storage.js';
+import { indexeddb } from './indexeddb.js';
+import { notificationsPush } from './notifications-push.js';
+import { webShare } from './web-share.js';
+import { backgroundSync } from './background-sync.js';
 
 /** Detection order = display order within each group. */
-export const FEATURES: Feature[] = [wasm, wasmSimd, webgpu];
+export const FEATURES: Feature[] = [
+  wasm,
+  wasmSimd,
+  webgpu,
+  secureContext,
+  serviceWorker,
+  installability,
+  cacheStorage,
+  indexeddb,
+  notificationsPush,
+  webShare,
+  backgroundSync,
+];
