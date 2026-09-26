@@ -375,7 +375,7 @@ main { display: block; }
   column-gap: 14px;
   align-items: center;
   min-width: 0;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
 }
 .card-title .card-name,
 .card-title .card-tag {

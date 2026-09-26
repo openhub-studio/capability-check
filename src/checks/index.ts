@@ -36,6 +36,7 @@ import { serviceWorker } from './service-worker.js';
 import { installability } from './installability.js';
 import { cacheStorage } from './cache-storage.js';
 import { indexeddb } from './indexeddb.js';
+import { opfs } from './opfs.js';
 import { notificationsPush } from './notifications-push.js';
 import { webShare } from './web-share.js';
 import { backgroundSync } from './background-sync.js';
@@ -50,6 +51,7 @@ export const FEATURES: Feature[] = [
   installability,
   cacheStorage,
   indexeddb,
+  opfs,
   notificationsPush,
   webShare,
   backgroundSync,
