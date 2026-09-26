@@ -1,5 +1,6 @@
 /* Card + group construction. Owns the DOM handles for each card
-   (cardEls) and the status-badge label map. */
+   (cardEls), per-group handles (groupEls), the status-badge label
+   map, skeleton rows, and the scroll-in reveal. */
 
 import { FEATURES } from '../checks/index.js';
 import { GROUPS } from '../groups.js';
@@ -21,9 +22,57 @@ export interface CardEls {
   body: HTMLElement;
 }
 
-export const cardEls: Record<string, CardEls> = {};
+export interface GroupEls {
+  section: HTMLElement;
+  count: HTMLElement;
+}
 
-function featureCard(f: Feature): HTMLElement {
+export const cardEls: Record<string, CardEls> = {};
+export const groupEls: Record<string, GroupEls> = {};
+
+/* ---------- skeleton rows (shown while a check runs) ---------- */
+
+export function skeletonBody(body: HTMLElement): void {
+  body.querySelectorAll('.meta-row, .card-detail.skel').forEach((r) =>
+    r.remove(),
+  );
+  for (let i = 0; i < 2; i++) {
+    const row = document.createElement('div');
+    row.className = 'meta-row skel';
+    const l = document.createElement('span');
+    l.className = 'skel-l';
+    const v = document.createElement('span');
+    v.className = 'skel-v';
+    row.append(l, v);
+    body.append(row);
+  }
+}
+
+/* ---------- scroll-in reveal ---------- */
+
+let observer: IntersectionObserver | null = null;
+
+function reveal(card: HTMLElement, index: number): void {
+  if (!('IntersectionObserver' in window)) return;
+  card.classList.add('pre-reveal');
+  card.style.setProperty('--d', (index % 3) * 70 + 'ms');
+  if (!observer) {
+    observer = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          e.target.classList.add('in-view');
+          observer?.unobserve(e.target);
+        }
+      },
+      { threshold: 0.08, rootMargin: '0px 0px -4% 0px' },
+    );
+  }
+  observer.observe(card);
+}
+
+/* ---------- card ---------- */
+
+function featureCard(f: Feature, index: number): HTMLElement {
   const card = document.createElement('article');
   card.className = 'card';
   card.id = 'card-' + f.id;
@@ -62,6 +111,7 @@ function featureCard(f: Feature): HTMLElement {
   detail.className = 'card-detail';
   detail.textContent = 'Checking…';
   body.append(detail);
+  skeletonBody(body);
 
   const foot = document.createElement('div');
   foot.className = 'card-foot';
@@ -77,26 +127,44 @@ function featureCard(f: Feature): HTMLElement {
 
   card.append(head, desc, body, foot);
   cardEls[f.id] = { badge, detail, body };
+  reveal(card, index);
   return card;
 }
 
-function groupSection(title: string, sub: string | undefined, members: Feature[]): HTMLElement {
+/* ---------- group section ---------- */
+
+function groupSection(
+  key: string,
+  title: string,
+  sub: string | undefined,
+  members: Feature[],
+): HTMLElement {
   const section = document.createElement('section');
   section.className = 'group';
+
+  const head = document.createElement('div');
+  head.className = 'group-head';
   const h = document.createElement('h2');
   h.className = 'group-title';
   h.textContent = title;
+  const count = document.createElement('span');
+  count.className = 'group-count';
+  count.hidden = true;
+  head.append(h, count);
+
   const grid = document.createElement('div');
   grid.className = 'card-grid';
-  members.forEach((f) => grid.append(featureCard(f)));
+  members.forEach((f, i) => grid.append(featureCard(f, i)));
+
   if (sub) {
     const p = document.createElement('p');
     p.className = 'group-sub';
     p.textContent = sub;
-    section.append(h, p, grid);
+    section.append(head, p, grid);
   } else {
-    section.append(h, grid);
+    section.append(head, grid);
   }
+  groupEls[key] = { section, count };
   return section;
 }
 
@@ -106,11 +174,11 @@ export function build(): void {
   for (const g of GROUPS) {
     const members = FEATURES.filter((f) => f.group === g.key);
     if (!members.length) continue;
-    groupsRoot.append(groupSection(g.title, g.sub, members));
+    groupsRoot.append(groupSection(g.key, g.title, g.sub, members));
   }
   const known = new Set(GROUPS.map((g) => g.key));
   const orphans = FEATURES.filter((f) => !known.has(f.group));
   if (orphans.length) {
-    groupsRoot.append(groupSection('Other', undefined, orphans));
+    groupsRoot.append(groupSection('__other__', 'Other', undefined, orphans));
   }
 }

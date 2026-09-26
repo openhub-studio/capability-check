@@ -4,7 +4,7 @@
 import { FEATURES } from './checks/index.js';
 import { results } from './state.js';
 import type { CheckResult } from './types.js';
-import { cardEls, STATUS_LABEL } from './ui/cards.js';
+import { cardEls, skeletonBody, STATUS_LABEL } from './ui/cards.js';
 import { mustQuery } from './ui/dom.js';
 import { updateSummary } from './ui/summary.js';
 
@@ -43,7 +43,7 @@ function resetCards(): void {
     els.badge.className = 'badge checking';
     mustQuery(els.badge, '.badge-text').textContent = STATUS_LABEL.checking;
     els.detail.textContent = 'Checking…';
-    els.body.querySelectorAll('.meta-row').forEach((r) => r.remove());
+    skeletonBody(els.body);
     delete results[f.id];
   }
   updateSummary();

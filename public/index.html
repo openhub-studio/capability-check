@@ -37,13 +37,28 @@
         <p class="summary-figure">
           <span id="score-num" class="score-num">–</span><span class="score-of">/<span id="score-total">–</span></span>
         </p>
-        <p class="summary-label">features supported</p>
+        <p class="summary-label">features fully supported</p>
         <div class="summary-bar" role="img" aria-label="Share of supported features">
-          <div id="summary-fill" class="summary-fill"></div>
+          <div id="fill-ok" class="fill-seg fill-ok"></div>
+          <div id="fill-partial" class="fill-seg fill-partial"></div>
+        </div>
+        <div class="summary-legend">
+          <span class="legend-chip"><i class="dot dot-ok"></i><b id="legend-ok">0</b> supported</span>
+          <span class="legend-chip"><i class="dot dot-warn"></i><b id="legend-partial">0</b> partial</span>
+          <span class="legend-chip"><i class="dot dot-bad"></i><b id="legend-bad">0</b> unavailable</span>
         </div>
         <p id="summary-note" class="summary-note">Checking…</p>
       </div>
     </section>
+
+    <!-- ======================= Filter ======================= -->
+    <nav class="filters" data-reveal aria-label="Filter features by status">
+      <div class="seg" role="group">
+        <button class="seg-btn" type="button" data-filter="all" aria-pressed="true">All</button>
+        <button class="seg-btn" type="button" data-filter="supported" aria-pressed="false">Supported</button>
+        <button class="seg-btn" type="button" data-filter="missing" aria-pressed="false">Needs fallback</button>
+      </div>
+    </nav>
 
     <!-- ======================= Feature groups ======================= -->
     <div id="groups" class="groups"></div>

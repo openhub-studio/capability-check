@@ -9,6 +9,7 @@ import { buildReport } from './report.js';
 import { runAll } from './runner.js';
 import { build } from './ui/cards.js';
 import { el } from './ui/dom.js';
+import { initFilters } from './ui/filters.js';
 import { toast } from './ui/toast.js';
 
 /* ---------------- hero env line ---------------- */
@@ -49,6 +50,7 @@ el<HTMLButtonElement>('rerun').addEventListener('click', runAll);
 /* ---------------- boot ---------------- */
 
 build();
+initFilters();
 // staggered rise-in for hero / summary / groups
 document.querySelectorAll<HTMLElement>('[data-reveal]').forEach((node, i) => {
   node.style.setProperty('--d', i * 120 + 'ms');
