@@ -211,6 +211,7 @@ main { display: block; }
 }
 .fill-ok { background: var(--ok); }
 .fill-partial { background: var(--warn); }
+.fill-bad { background: var(--bad); }
 .summary-legend {
   margin-top: 18px;
   display: flex;
@@ -365,7 +366,7 @@ main { display: block; }
 .card-head {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 12px;
 }
 .card-title {
@@ -373,6 +374,12 @@ main { display: block; }
   grid-template-columns: 44px 1fr;
   column-gap: 14px;
   align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.card-title .card-name,
+.card-title .card-tag {
+  min-width: 0;
 }
 .card-title .icon-tile { grid-row: 1 / span 2; }
 .icon-tile {
@@ -468,6 +475,8 @@ main { display: block; }
   padding: 4px 11px 4px 8px;
   border-radius: 980px;
   white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: auto;
   transition: background-color 250ms var(--ease-std), color 250ms var(--ease-std);
 }
 .badge-dot {

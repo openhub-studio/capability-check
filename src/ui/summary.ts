@@ -43,6 +43,7 @@ export function updateSummary(): void {
   const numEl = el('score-num');
   const fillOk = el('fill-ok');
   const fillPartial = el('fill-partial');
+  const fillBad = el('fill-bad');
   const note = el('summary-note');
 
   setText('score-total', String(total));
@@ -51,6 +52,7 @@ export function updateSummary(): void {
   if (total) {
     fillOk.style.width = (okCount / total) * 100 + '%';
     fillPartial.style.width = (partial / total) * 100 + '%';
+    fillBad.style.width = (bad / total) * 100 + '%';
   }
 
   setText('legend-ok', String(okCount));
