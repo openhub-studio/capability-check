@@ -1,5 +1,53 @@
-import type { CheckResult, Feature } from '../types.js';
+import type { CheckResult, Feature, MetaItem } from '../types.js';
 import { hasWASM, WASM_MINIMAL } from './common.js';
+
+/**
+ * Functional streaming test: feed compileStreaming a real Response carrying
+ * the application/wasm MIME type — stronger than checking typeof.
+ */
+async function streamingCompile(): Promise<boolean> {
+  const compile =
+    typeof WebAssembly.compileStreaming === 'function'
+      ? WebAssembly.compileStreaming
+      : typeof WebAssembly.instantiateStreaming === 'function'
+        ? async (src: Response | Promise<Response>) =>
+            (await WebAssembly.instantiateStreaming(src)).module
+        : null;
+  if (!compile) return false;
+  try {
+    const res = new Response(WASM_MINIMAL.slice().buffer, {
+      headers: { 'Content-Type': 'application/wasm' },
+    });
+    const mod = await compile(Promise.resolve(res));
+    return mod instanceof WebAssembly.Module;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Shared-memory probe: constructing a shared WebAssembly.Memory is the
+ * mechanical half of WASM threads; SharedArrayBuffer + cross-origin
+ * isolation decide whether threads can actually communicate.
+ */
+function threadPrimitives(): {
+  sharedMem: boolean;
+  sab: boolean;
+  isolated: boolean;
+} {
+  let sharedMem = false;
+  try {
+    new WebAssembly.Memory({ initial: 1, maximum: 1, shared: true });
+    sharedMem = true;
+  } catch {
+    sharedMem = false;
+  }
+  return {
+    sharedMem,
+    sab: typeof SharedArrayBuffer === 'function',
+    isolated: window.crossOriginIsolated === true,
+  };
+}
 
 export const wasm: Feature = {
   id: 'wasm',
@@ -26,6 +74,8 @@ export const wasm: Feature = {
         detail: 'WebAssembly exists but failed binary validation.',
       };
     }
+
+    const t0 = performance.now();
     let instantiated = false;
     try {
       const { instance } = await WebAssembly.instantiate(WASM_MINIMAL);
@@ -33,19 +83,38 @@ export const wasm: Feature = {
     } catch {
       /* fall through */
     }
-    const streaming = typeof WebAssembly.instantiateStreaming === 'function';
+    const latency = Math.max(1, Math.round(performance.now() - t0));
+
+    const [streaming, threads] = await Promise.all([
+      streamingCompile(),
+      Promise.resolve(threadPrimitives()),
+    ]);
+    const threadsReady = threads.sharedMem && threads.sab;
+
+    const meta: MetaItem[] = [
+      {
+        label: 'Streaming compilation',
+        value: streaming ? 'Passed (real compile)' : 'Unavailable',
+        ok: streaming,
+      },
+      {
+        label: 'Threads (shared memory)',
+        value: threadsReady
+          ? threads.isolated
+            ? 'Ready'
+            : 'Shared memory OK — needs COOP/COEP isolation'
+          : 'Unavailable',
+        ok: threadsReady && threads.isolated ? true : threads.sharedMem ? null : false,
+      },
+      { label: 'Probe latency', value: latency + ' ms' },
+    ];
+
     return {
       status: instantiated ? 'supported' : 'partial',
       detail: instantiated
         ? 'Modules validate and instantiate correctly.'
         : 'Modules validate but could not be instantiated.',
-      meta: [
-        {
-          label: 'Streaming compilation',
-          value: streaming ? 'Available' : 'Unavailable',
-          ok: streaming,
-        },
-      ],
+      meta,
     };
   },
 };

@@ -1,40 +1,79 @@
 import type { CheckResult, Feature, MetaItem } from '../types.js';
+import { formatBytes, tryProbe } from './common.js';
 
 const PROBE_FILE = 'capability-check-probe.txt';
+const PROBE_DIR = 'capability-check-probe-dir';
 const PROBE_TEXT = 'ok';
 
 type StorageWithOPFS = StorageManager & {
   getDirectory?: () => Promise<FileSystemDirectoryHandle>;
 };
 
-/** Real probe: getDirectory → create file → write → read back → remove. 3s guard. */
-async function roundtrip(): Promise<boolean> {
-  const storage = navigator.storage as StorageWithOPFS;
-  const probe = (async () => {
-    const root = await storage.getDirectory!();
-    const handle = await root.getFileHandle(PROBE_FILE, { create: true });
-    const writable = await handle.createWritable();
-    await writable.write(PROBE_TEXT);
-    await writable.close();
-    const file = await handle.getFile();
-    const text = await file.text();
-    await root.removeEntry(PROBE_FILE);
-    return text === PROBE_TEXT;
-  })();
-  const timeout = new Promise<boolean>((resolve) =>
-    setTimeout(() => resolve(false), 3000),
-  );
-  try {
-    return await Promise.race([probe, timeout]);
-  } catch {
-    return false;
-  }
+/**
+ * Real probe: getDirectory → create subdirectory → write a file inside →
+ * read it back → remove both. Exercises file + directory ops, not just
+ * API presence.
+ */
+async function roundtrip(storage: StorageWithOPFS): Promise<boolean> {
+  const root = await storage.getDirectory!();
+  const dir = await root.getDirectoryHandle(PROBE_DIR, { create: true });
+  const handle = await dir.getFileHandle(PROBE_FILE, { create: true });
+  const writable = await handle.createWritable();
+  await writable.write(PROBE_TEXT);
+  await writable.close();
+  const file = await handle.getFile();
+  const text = await file.text();
+  await dir.removeEntry(PROBE_FILE);
+  await root.removeEntry(PROBE_DIR);
+  return text === PROBE_TEXT;
 }
 
-function formatBytes(bytes: number): string {
-  if (bytes >= 1024 ** 3) return (bytes / 1024 ** 3).toFixed(1) + ' GB';
-  if (bytes >= 1024 ** 2) return (bytes / 1024 ** 2).toFixed(0) + ' MB';
-  return (bytes / 1024).toFixed(0) + ' KB';
+/**
+ * createSyncAccessHandle only works inside a dedicated worker — spawn an
+ * inline worker and actually write/read synchronously rather than trusting
+ * the prototype check.
+ */
+function syncAccessProbe(): Promise<boolean> {
+  return new Promise((resolve) => {
+    const src = `onmessage = async () => {
+      try {
+        const root = await navigator.storage.getDirectory();
+        const fh = await root.getFileHandle('cc-sync-probe', { create: true });
+        const h = await fh.createSyncAccessHandle();
+        h.write(new Uint8Array([1]), { at: 0 });
+        h.flush();
+        h.close();
+        await root.removeEntry('cc-sync-probe');
+        postMessage(true);
+      } catch { postMessage(false); }
+    };`;
+    let worker: Worker;
+    try {
+      const url = URL.createObjectURL(
+        new Blob([src], { type: 'text/javascript' }),
+      );
+      worker = new Worker(url);
+      URL.revokeObjectURL(url);
+    } catch {
+      resolve(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      worker.terminate();
+      resolve(false);
+    }, 3000);
+    worker.onmessage = (e: MessageEvent<unknown>) => {
+      clearTimeout(timer);
+      worker.terminate();
+      resolve(e.data === true);
+    };
+    worker.onerror = () => {
+      clearTimeout(timer);
+      worker.terminate();
+      resolve(false);
+    };
+    worker.postMessage(0);
+  });
 }
 
 export const opfs: Feature = {
@@ -63,43 +102,49 @@ export const opfs: Feature = {
       };
     }
 
-    const meta: MetaItem[] = [
-      {
-        label: 'Sync access handles',
-        value:
-          typeof FileSystemFileHandle !== 'undefined' &&
-          'createSyncAccessHandle' in FileSystemFileHandle.prototype
-            ? 'Available (workers)'
-            : 'Unavailable',
-        ok:
-          typeof FileSystemFileHandle !== 'undefined' &&
-          'createSyncAccessHandle' in FileSystemFileHandle.prototype,
-      },
-    ];
-    try {
-      const [estimate, persisted] = await Promise.all([
-        storage.estimate?.(),
-        storage.persisted?.(),
-      ]);
-      if (estimate?.quota) {
-        meta.push({ label: 'Storage quota', value: formatBytes(estimate.quota) });
-      }
-      if (persisted !== undefined) {
-        meta.push({
-          label: 'Persistent storage',
-          value: persisted ? 'Granted' : 'Not granted',
-          ok: persisted,
-        });
-      }
-    } catch {
-      /* estimate/persisted are optional */
+    const meta: MetaItem[] = [];
+    const [estimate, persisted, syncOk] = await Promise.all([
+      tryProbe(storage.estimate?.()),
+      tryProbe(storage.persisted?.()),
+      tryProbe(syncAccessProbe(), 4000),
+    ]);
+    meta.push({
+      label: 'Sync access handles',
+      value:
+        syncOk === true
+          ? 'Verified in a worker'
+          : syncOk === false
+            ? 'Worker write failed'
+            : 'Probe inconclusive',
+      ok: syncOk,
+    });
+    if (estimate?.quota) {
+      meta.push({ label: 'Storage quota', value: formatBytes(estimate.quota) });
+    }
+    if (persisted !== null && persisted !== undefined) {
+      meta.push({
+        label: 'Persistent storage',
+        value: persisted ? 'Granted' : 'Not granted',
+        ok: persisted,
+      });
     }
 
-    const ok = await roundtrip();
+    const t0 = performance.now();
+    const ok = (await tryProbe(roundtrip(storage))) === true;
+    meta.push({
+      label: 'File + directory probe',
+      value: ok ? 'Write/read/remove passed' : 'Failed',
+      ok,
+    });
+    meta.push({
+      label: 'Roundtrip latency',
+      value: Math.max(1, Math.round(performance.now() - t0)) + ' ms',
+    });
+
     return {
       status: ok ? 'supported' : 'partial',
       detail: ok
-        ? 'A file was written to and read back from the origin-private filesystem.'
+        ? 'A file was written to and read back from a directory inside the origin-private filesystem.'
         : 'API exists but a real write failed — private mode or blocked storage.',
       meta,
     };

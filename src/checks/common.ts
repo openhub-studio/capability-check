@@ -1,4 +1,4 @@
-/* Shared test binaries and helpers for WASM-based checks. */
+/* Shared test binaries and helpers for the capability probes. */
 
 /** Minimal valid WebAssembly module (magic + version header only). */
 export const WASM_MINIMAL = new Uint8Array([
@@ -21,4 +21,30 @@ export function hasWASM(): boolean {
     typeof WebAssembly === 'object' &&
     typeof WebAssembly.validate === 'function'
   );
+}
+
+/**
+ * Run a probe against a timeout. Resolves `null` on timeout or rejection —
+ * probes should never throw or hang the runner.
+ */
+export async function tryProbe<T>(
+  probe: Promise<T> | undefined | null,
+  timeoutMs = 3000,
+): Promise<T | null> {
+  if (!probe) return null;
+  const timeout = new Promise<null>((resolve) =>
+    setTimeout(() => resolve(null), timeoutMs),
+  );
+  try {
+    return await Promise.race([probe, timeout]);
+  } catch {
+    return null;
+  }
+}
+
+/** Human-readable byte sizes, e.g. 1.0 GB / 240 MB / 12 KB. */
+export function formatBytes(bytes: number): string {
+  if (bytes >= 1024 ** 3) return (bytes / 1024 ** 3).toFixed(1) + ' GB';
+  if (bytes >= 1024 ** 2) return (bytes / 1024 ** 2).toFixed(0) + ' MB';
+  return (bytes / 1024).toFixed(0) + ' KB';
 }

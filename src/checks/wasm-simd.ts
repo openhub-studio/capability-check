@@ -1,4 +1,4 @@
-import type { CheckResult, Feature } from '../types.js';
+import type { CheckResult, Feature, MetaItem } from '../types.js';
 import { hasWASM, WASM_SIMD_MODULE } from './common.js';
 
 export const wasmSimd: Feature = {
@@ -20,20 +20,52 @@ export const wasmSimd: Feature = {
         detail: 'Requires WebAssembly, which is unavailable.',
       };
     }
-    let ok = false;
+    let validated = false;
     try {
-      ok = WebAssembly.validate(WASM_SIMD_MODULE);
+      validated = WebAssembly.validate(WASM_SIMD_MODULE);
     } catch {
-      ok = false;
+      validated = false;
+    }
+    let instantiated = false;
+    if (validated) {
+      try {
+        const { instance } = await WebAssembly.instantiate(WASM_SIMD_MODULE);
+        instantiated = instance instanceof WebAssembly.Instance;
+      } catch {
+        instantiated = false;
+      }
+    }
+    const meta: MetaItem[] = [
+      { label: 'Vector width', value: '128-bit', ok: validated ? true : null },
+      {
+        label: 'Binary validation',
+        value: validated ? 'Passed' : 'Rejected',
+        ok: validated,
+      },
+      {
+        label: 'Instantiation',
+        value: instantiated ? 'Passed' : 'Failed',
+        ok: instantiated ? true : validated ? false : null,
+      },
+    ];
+    if (validated && instantiated) {
+      return {
+        status: 'supported',
+        detail: 'v128 vector operations validate and instantiate.',
+        meta,
+      };
+    }
+    if (validated) {
+      return {
+        status: 'partial',
+        detail: 'SIMD binaries validate but fail to instantiate on this engine.',
+        meta,
+      };
     }
     return {
-      status: ok ? 'supported' : 'unsupported',
-      detail: ok
-        ? 'v128 vector operations validate successfully.'
-        : 'This engine rejects SIMD128 vector instructions.',
-      meta: [
-        { label: 'Vector width', value: '128-bit', ok: ok ? true : null },
-      ],
+      status: 'unsupported',
+      detail: 'This engine rejects SIMD128 vector instructions.',
+      meta,
     };
   },
 };

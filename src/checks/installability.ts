@@ -1,4 +1,52 @@
 import type { CheckResult, Feature, MetaItem } from '../types.js';
+import { tryProbe } from './common.js';
+
+interface ManifestShape {
+  name?: string;
+  short_name?: string;
+  display?: string;
+  start_url?: string;
+  icons?: { sizes?: string }[];
+}
+
+/**
+ * Fetch and parse the linked web app manifest — install prompts only fire
+ * when the manifest carries the required fields (name, icons, display…).
+ */
+async function manifestProbe(
+  link: HTMLLinkElement,
+): Promise<MetaItem[]> {
+  const res = await tryProbe(fetch(link.href), 4000);
+  if (!res || !res.ok) {
+    return [
+      { label: 'Manifest', value: 'Linked but failed to load', ok: false },
+    ];
+  }
+  let man: ManifestShape;
+  try {
+    man = (await res.json()) as ManifestShape;
+  } catch {
+    return [{ label: 'Manifest', value: 'Linked but invalid JSON', ok: false }];
+  }
+  const icons = man.icons?.length ?? 0;
+  const has192 = (man.icons ?? []).some((i) =>
+    /\b(192|512)\b/.test(i.sizes ?? ''),
+  );
+  const named = Boolean(man.name || man.short_name);
+  const rows: MetaItem[] = [
+    { label: 'Manifest', value: 'Parsed', ok: true },
+    { label: 'App name', value: man.name ?? man.short_name ?? 'Missing', ok: named },
+    {
+      label: 'Icons',
+      value: icons ? icons + ' declared' + (has192 ? ' (≥192px)' : '') : 'None',
+      ok: has192 ? true : icons ? null : false,
+    },
+  ];
+  if (man.display) {
+    rows.push({ label: 'Display mode', value: man.display });
+  }
+  return rows;
+}
 
 export const installability: Feature = {
   id: 'installability',
@@ -16,10 +64,13 @@ export const installability: Feature = {
     const hasPromptApi =
       'BeforeInstallPromptEvent' in window ||
       'onbeforeinstallprompt' in window;
-    const appleManual = 'standalone' in navigator; // iOS Safari flow
+    const appleStandalone = (
+      navigator as { standalone?: boolean }
+    ).standalone;
+    const appleManual = appleStandalone !== undefined; // iOS Safari flow
     const installed = window.matchMedia(
       '(display-mode: standalone)',
-    ).matches;
+    ).matches || appleStandalone === true;
 
     const meta: MetaItem[] = [
       {
@@ -30,10 +81,25 @@ export const installability: Feature = {
       { label: 'Running installed', value: installed ? 'Yes' : 'No', ok: null },
     ];
 
+    const link = document.querySelector<HTMLLinkElement>(
+      'link[rel="manifest"]',
+    );
+    if (link) {
+      meta.push(...(await manifestProbe(link)));
+    } else {
+      meta.push({
+        label: 'Manifest',
+        value: 'None linked on this page',
+        ok: null,
+      });
+    }
+
     if (hasPromptApi) {
       return {
         status: 'supported',
-        detail: 'This browser can fire an install prompt for eligible apps.',
+        detail: link
+          ? 'This browser can fire an install prompt for eligible apps.'
+          : 'Prompt API exists — note this page links no manifest, so no prompt would fire here.',
         meta,
       };
     }

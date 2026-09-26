@@ -15,7 +15,12 @@ export const notificationsPush: Feature = {
   async detect(): Promise<CheckResult> {
     const notif =
       typeof Notification !== 'undefined' && 'permission' in Notification;
-    const push = 'PushManager' in window;
+    const swApi = 'serviceWorker' in navigator;
+    const push =
+      'PushManager' in window &&
+      swApi &&
+      'ServiceWorkerRegistration' in window &&
+      'pushManager' in ServiceWorkerRegistration.prototype;
 
     const meta: MetaItem[] = [
       {
@@ -28,9 +33,31 @@ export const notificationsPush: Feature = {
         value: push ? 'Available' : 'Unavailable',
         ok: push,
       },
+      {
+        label: 'Delivery path',
+        value: swApi
+          ? 'Service worker present — push can reach a closed app'
+          : 'No service worker — push cannot be delivered',
+        ok: swApi ? true : push ? false : null,
+      },
     ];
+
+    // Real encryption detail: which content encodings push supports.
+    const enc =
+      typeof PushManager !== 'undefined'
+        ? (
+            PushManager as unknown as {
+              supportedContentEncodings?: readonly string[];
+            }
+          ).supportedContentEncodings
+        : undefined;
+    if (push && enc?.length) {
+      meta.push({ label: 'Push encodings', value: enc.join(', ') });
+    }
+
+    let perm: NotificationPermission | null = null;
     if (notif) {
-      const perm = Notification.permission;
+      perm = Notification.permission;
       meta.push({
         label: 'Permission',
         value: perm[0]!.toUpperCase() + perm.slice(1),
@@ -39,20 +66,28 @@ export const notificationsPush: Feature = {
     }
 
     if (notif && push) {
+      if (perm === 'denied') {
+        return {
+          status: 'partial',
+          detail:
+            'Both APIs exist, but notifications are blocked in browser settings — prompts will never show.',
+          meta,
+        };
+      }
       return {
         status: 'supported',
-        detail: 'Both notification display and push delivery are available.',
+        detail:
+          'Both notification display and push delivery are available.' +
+          (perm === 'granted' ? ' Permission is already granted.' : ''),
         meta,
       };
     }
     if (notif || push) {
       return {
         status: 'partial',
-        detail:
-          'Partial coverage — ' +
-          (notif
-            ? 'notifications work but the Push API is missing.'
-            : 'push plumbing exists but notifications are unavailable.'),
+        detail: notif
+          ? 'Notifications work but the Push API (or its service worker plumbing) is missing.'
+          : 'Push plumbing exists but notifications are unavailable.',
         meta,
       };
     }

@@ -1,9 +1,10 @@
-import type { CheckResult, Feature } from '../types.js';
+import type { CheckResult, Feature, MetaItem } from '../types.js';
+import { formatBytes, tryProbe } from './common.js';
 
 const PROBE_CACHE = 'capability-check-probe';
 const PROBE_URL = '/__capability_probe__';
 
-/** Real probe: open → write → read back → delete. */
+/** Real probe: open → write → read back → delete. Timed and guarded. */
 async function roundtrip(): Promise<'ok' | 'write-failed' | 'error'> {
   try {
     const cache = await caches.open(PROBE_CACHE);
@@ -42,22 +43,38 @@ export const cacheStorage: Feature = {
           'window.caches is absent (API missing or insecure context).',
       };
     }
-    const res = await roundtrip();
+    const meta: MetaItem[] = [];
+    const est = await tryProbe(navigator.storage?.estimate?.());
+    if (est?.quota) {
+      meta.push({
+        label: 'Origin quota',
+        value: formatBytes(est.quota),
+      });
+    }
+
+    const t0 = performance.now();
+    const res = await tryProbe(roundtrip());
+    const ms = Math.max(1, Math.round(performance.now() - t0));
+    meta.push({ label: 'Roundtrip latency', value: ms + ' ms' });
+
     if (res === 'ok') {
       return {
         status: 'supported',
         detail: 'Write/read/delete roundtrip succeeded.',
+        meta,
       };
     }
     if (res === 'write-failed') {
       return {
         status: 'partial',
         detail: 'Cache opened but the readback came up empty.',
+        meta,
       };
     }
     return {
       status: 'unsupported',
       detail: 'API exists but a real write failed — storage may be disabled.',
+      meta,
     };
   },
 };

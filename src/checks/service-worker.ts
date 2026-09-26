@@ -1,11 +1,17 @@
-import type { CheckResult, Feature } from '../types.js';
+import type { CheckResult, Feature, MetaItem } from '../types.js';
+import { tryProbe } from './common.js';
 
-/** Real probe: registers the bundled no-op sw.js, then unregisters it. */
-async function probeRegistration(): Promise<ServiceWorkerRegistration> {
-  const timeout = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error('registration timed out')), 5000),
-  );
-  return Promise.race([navigator.serviceWorker.register('/sw.js'), timeout]);
+/**
+ * Real probe: registers the bundled no-op sw.js, waits for the runtime to
+ * report an active worker via serviceWorker.ready, then unregisters.
+ */
+async function probeRegistration(): Promise<{
+  reg: ServiceWorkerRegistration;
+  activated: boolean;
+} | null> {
+  const reg = await navigator.serviceWorker.register('/sw.js');
+  const ready = await tryProbe(navigator.serviceWorker.ready, 5000);
+  return { reg, activated: ready !== null };
 }
 
 export const serviceWorker: Feature = {
@@ -33,27 +39,54 @@ export const serviceWorker: Feature = {
         detail: 'Service workers require a secure context (HTTPS or localhost).',
       };
     }
-    let reg: ServiceWorkerRegistration;
+
+    const existing = (await tryProbe(
+      navigator.serviceWorker.getRegistrations(),
+    ))?.length;
+
+    let outcome: { reg: ServiceWorkerRegistration; activated: boolean } | null;
     try {
-      reg = await probeRegistration();
-    } catch (err) {
+      outcome = await tryProbe(probeRegistration(), 6000);
+    } catch {
+      outcome = null;
+    }
+    if (!outcome) {
       return {
         status: 'unsupported',
         detail:
-          'API is present but registration failed: ' +
-          (err instanceof Error ? err.message : String(err)),
+          'API is present but a real registration failed or timed out.',
       };
     }
-    const scope = reg.scope;
+
+    const { reg, activated } = outcome;
+    const meta: MetaItem[] = [
+      { label: 'Probe scope', value: reg.scope },
+      {
+        label: 'Activation',
+        value: activated ? 'Confirmed via .ready' : 'Not confirmed',
+        ok: activated,
+      },
+      {
+        label: 'Page controlled',
+        value: navigator.serviceWorker.controller ? 'Yes' : 'No',
+        ok: null,
+      },
+      {
+        label: 'Registrations on origin',
+        value: existing !== undefined ? String(existing) : 'Unknown',
+      },
+    ];
     try {
       await reg.unregister();
     } catch {
       /* cosmetic — the probe worker intercepts nothing anyway */
     }
     return {
-      status: 'supported',
-      detail: 'A test worker registered and released successfully.',
-      meta: [{ label: 'Probe scope', value: scope }],
+      status: activated ? 'supported' : 'partial',
+      detail: activated
+        ? 'A test worker registered, activated, and released successfully.'
+        : 'Registration worked but activation could not be confirmed.',
+      meta,
     };
   },
 };

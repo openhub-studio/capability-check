@@ -15,11 +15,19 @@ export const backgroundSync: Feature = {
   description:
     'Lets a service worker retry failed requests and run periodic work in the background.',
   async detect(): Promise<CheckResult> {
+    const swApi = 'serviceWorker' in navigator;
     if (!('ServiceWorkerRegistration' in window)) {
       return {
         status: 'unsupported',
         detail:
           'No service worker support — background sync cannot exist here.',
+        meta: [
+          {
+            label: 'Service Worker API',
+            value: swApi ? 'Present (limited)' : 'Missing',
+            ok: false,
+          },
+        ],
       };
     }
     const proto = ServiceWorkerRegistration.prototype;
@@ -27,10 +35,15 @@ export const backgroundSync: Feature = {
     const periodic = 'periodicSync' in proto; // PeriodicSyncManager
 
     const meta: MetaItem[] = [
-      { label: 'SyncManager', value: sync ? 'Available' : 'Unavailable', ok: sync },
+      { label: 'Service Worker API', value: 'Present', ok: true },
       {
-        label: 'PeriodicSyncManager',
-        value: periodic ? 'Available' : 'Unavailable',
+        label: 'One-off sync',
+        value: sync ? 'SyncManager on registrations' : 'Unavailable',
+        ok: sync,
+      },
+      {
+        label: 'Periodic sync',
+        value: periodic ? 'PeriodicSyncManager on registrations' : 'Unavailable',
         ok: periodic,
       },
     ];
