@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Capabilities — What can your browser do?</title>
+  <meta name="description" content="A live report of the web platform features available in your browser. Checked locally — nothing leaves this device." />
+  <link rel="stylesheet" href="styles/main.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231d1d1f'/%3E%3Cpath d='M9 17.5l4.5 4.5L23 12' stroke='white' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+</head>
+<body>
+  <!-- ======================= Nav ======================= -->
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="wordmark" href="#">Capabilities</a>
+      <div class="nav-actions">
+        <button id="rerun" class="btn btn-quiet" type="button" hidden>Re-run</button>
+        <button id="copy-report" class="btn btn-primary" type="button" hidden>Copy report</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- ======================= Hero ======================= -->
+    <section class="hero" data-reveal>
+      <p class="hero-env" id="hero-env">&nbsp;</p>
+      <h1 class="hero-title">What can your<br />browser do?</h1>
+      <p class="hero-sub">
+        A live report of the web platform features available in this browser —
+        checked locally. Nothing leaves your device.
+      </p>
+    </section>
+
+    <!-- ======================= Summary ======================= -->
+    <section class="summary" data-reveal aria-live="polite">
+      <div class="summary-inner">
+        <p class="summary-figure">
+          <span id="score-num" class="score-num">–</span><span class="score-of">/<span id="score-total">–</span></span>
+        </p>
+        <p class="summary-label">features supported</p>
+        <div class="summary-bar" role="img" aria-label="Share of supported features">
+          <div id="summary-fill" class="summary-fill"></div>
+        </div>
+        <p id="summary-note" class="summary-note">Checking…</p>
+      </div>
+    </section>
+
+    <!-- ======================= Feature groups ======================= -->
+    <div id="groups" class="groups"></div>
+
+    <!-- ======================= Footer ======================= -->
+    <footer class="footer">
+      <p>Runs entirely in your browser. No network requests, no telemetry.</p>
+      <p class="footer-dim">Open source under the MIT License.</p>
+    </footer>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="scripts/features.js"></script>
+  <script src="scripts/app.js"></script>
+</body>
+</html>

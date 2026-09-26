@@ -1,0 +1,16 @@
+{
+  "name": "capability-check",
+  "compatibility_date": "2026-09-25",
+  // Custom domain only — no .workers.dev route.
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "hello.openhub.today",
+      "custom_domain": true,
+    },
+  ],
+  "assets": {
+    "directory": "./public",
+    "not_found_handling": "single-page-application",
+  },
+}
