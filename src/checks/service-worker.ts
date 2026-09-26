@@ -2,16 +2,39 @@ import type { CheckResult, Feature, MetaItem } from '../types.js';
 import { tryProbe } from './common.js';
 
 /**
- * Real probe: registers the bundled no-op sw.js, waits for the runtime to
- * report an active worker via serviceWorker.ready, then unregisters.
+ * Wait for a registration's worker to reach 'activated' state.
+ * (Can't use navigator.serviceWorker.ready — that resolves against the
+ * page-controlling registration, not this probe's dedicated scope.)
+ */
+function waitForActivation(reg: ServiceWorkerRegistration): Promise<boolean> {
+  const sw = reg.installing ?? reg.waiting ?? reg.active;
+  if (!sw) return Promise.resolve(false);
+  if (sw.state === 'activated') return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(false), 4000);
+    sw.addEventListener('statechange', () => {
+      if (sw.state === 'activated') {
+        clearTimeout(timer);
+        resolve(true);
+      }
+    });
+  });
+}
+
+/**
+ * Real probe: registers the bundled no-op sw-probe.js under its own scope
+ * (so it can never disturb the site's real '/' registration), waits for
+ * activation, then unregisters.
  */
 async function probeRegistration(): Promise<{
   reg: ServiceWorkerRegistration;
   activated: boolean;
 } | null> {
-  const reg = await navigator.serviceWorker.register('/sw.js');
-  const ready = await tryProbe(navigator.serviceWorker.ready, 5000);
-  return { reg, activated: ready !== null };
+  const reg = await navigator.serviceWorker.register('/sw-probe.js', {
+    scope: '/__cc_probe__/',
+  });
+  const activated = await waitForActivation(reg);
+  return { reg, activated };
 }
 
 export const serviceWorker: Feature = {
@@ -63,7 +86,7 @@ export const serviceWorker: Feature = {
       { label: 'Probe scope', value: reg.scope },
       {
         label: 'Activation',
-        value: activated ? 'Confirmed via .ready' : 'Not confirmed',
+        value: activated ? 'Worker reached activated state' : 'Not confirmed',
         ok: activated,
       },
       {

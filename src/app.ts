@@ -49,6 +49,16 @@ el<HTMLButtonElement>('rerun').addEventListener('click', runAll);
 
 /* ---------------- boot ---------------- */
 
+// Register the real app-shell service worker (offline support). The
+// Service Worker *check* probes a dedicated /sw-probe.js scope instead.
+if ('serviceWorker' in navigator && window.isSecureContext) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      /* offline shell unavailable — page still works */
+    });
+  });
+}
+
 build();
 initFilters();
 // staggered rise-in for hero / summary / groups
