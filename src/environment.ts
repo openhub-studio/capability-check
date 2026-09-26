@@ -30,8 +30,13 @@ function parseUA(): Env {
   let os = '';
   if (/Windows NT/.test(ua)) os = 'Windows';
   else if (/Android/.test(ua)) os = 'Android';
-  else if (/iPhone|iPad|iPod/.test(ua)) os = 'iOS';
-  else if (/Mac OS X/.test(ua)) os = 'macOS';
+  else if (/iPad/.test(ua)) os = 'iPadOS';
+  else if (/iPhone|iPod/.test(ua)) os = 'iOS';
+  else if (/Mac OS X/.test(ua)) {
+    // iPadOS 13+ ships a desktop-class "Macintosh" UA — multi-touch is
+    // the reliable tell (Macs report maxTouchPoints 0/undefined).
+    os = navigator.maxTouchPoints > 1 ? 'iPadOS' : 'macOS';
+  }
   else if (/CrOS/.test(ua)) os = 'ChromeOS';
   else if (/Linux/.test(ua)) os = 'Linux';
   return { name, version, os, ua };
