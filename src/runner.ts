@@ -1,0 +1,81 @@
+/* Runner — executes each check's detect(), pushes results into the
+   store and the DOM, keeps the summary in sync. */
+
+import { FEATURES } from './checks/index.js';
+import { results } from './state.js';
+import type { CheckResult } from './types.js';
+import { cardEls, STATUS_LABEL } from './ui/cards.js';
+import { mustQuery } from './ui/dom.js';
+import { updateSummary } from './ui/summary.js';
+
+function renderResult(id: string, res: CheckResult): void {
+  const els = cardEls[id];
+  if (!els) return;
+  const { badge, detail, body } = els;
+  badge.className = 'badge ' + res.status + ' result-in';
+  mustQuery(badge, '.badge-text').textContent =
+    STATUS_LABEL[res.status] ?? res.status;
+  detail.textContent = res.detail || '';
+  // clear old meta rows
+  body.querySelectorAll('.meta-row').forEach((r) => r.remove());
+  if (Array.isArray(res.meta)) {
+    for (const m of res.meta) {
+      const row = document.createElement('div');
+      row.className = 'meta-row';
+      const l = document.createElement('span');
+      l.className = 'meta-label';
+      l.textContent = m.label;
+      const v = document.createElement('span');
+      v.className = 'meta-value';
+      v.textContent = m.value;
+      if (m.ok === true) v.style.color = 'var(--ok)';
+      else if (m.ok === false) v.style.color = 'var(--bad)';
+      row.append(l, v);
+      body.append(row);
+    }
+  }
+}
+
+function resetCards(): void {
+  for (const f of FEATURES) {
+    const els = cardEls[f.id];
+    if (!els) continue;
+    els.badge.className = 'badge checking';
+    mustQuery(els.badge, '.badge-text').textContent = STATUS_LABEL.checking;
+    els.detail.textContent = 'Checking…';
+    els.body.querySelectorAll('.meta-row').forEach((r) => r.remove());
+    delete results[f.id];
+  }
+  updateSummary();
+}
+
+async function runFeature(f: (typeof FEATURES)[number]): Promise<void> {
+  let res: CheckResult;
+  try {
+    res = await f.detect();
+  } catch (err) {
+    res = {
+      status: 'unsupported',
+      detail:
+        'The check itself failed: ' +
+        (err instanceof Error ? err.message : String(err)),
+    };
+  }
+  if (!res || !res.status) {
+    res = { status: 'unsupported', detail: 'Check returned no result.' };
+  }
+  results[f.id] = { feature: f, ...res };
+  renderResult(f.id, res);
+  updateSummary();
+}
+
+/** Runs every registered check, visually staggered. */
+export function runAll(): void {
+  resetCards();
+  FEATURES.forEach((f, i) => {
+    // small stagger so the cascade reads as live checks, not noise
+    setTimeout(() => {
+      void runFeature(f);
+    }, i * 160);
+  });
+}
